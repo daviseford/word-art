@@ -1,10 +1,6 @@
 import nltk  # http://www.nltk.org/
-from nltk.tokenize import TweetTokenizer, sent_tokenize
+from nltk.tokenize import TweetTokenizer
 import string
-import numpy
-import os
-import sys
-
 import io
 
 
@@ -44,6 +40,5 @@ def get_sentence_lengths(path_to_src_text):
     input_text = read_file(path_to_src_text)
     sentences = get_sentences(input_text)
     return filter_length(sentences)
-
 
 # print get_sentence_lengths('./txt/bible.txt')

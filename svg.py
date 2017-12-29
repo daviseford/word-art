@@ -68,6 +68,7 @@ def run_svg():
         paths=[paths],
         nodes=[paths.point(0.0), paths.point(1.0)],
         node_radii=[2, 2],
+
         # text='Some sample text',
         # text_path=Path(Line(start=(0 + 50), end=(100 + 50))),
         # font_size=[5],
