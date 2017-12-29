@@ -46,5 +46,4 @@ def get_sentence_lengths(path_to_src_text):
     return filter_length(sentences)
 
 
-# print get_sentence_lengths('./txt/sample1.txt')
-print get_sentence_lengths('./txt/lyme_savvy.txt')
+# print get_sentence_lengths('./txt/bible.txt')

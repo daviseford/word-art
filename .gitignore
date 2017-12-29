@@ -156,3 +156,8 @@ venv.bak/
 .mypy_cache/
 
 .idea/
+
+lyme_savvy.txt
+making_a_pearl.txt
+
+/output
