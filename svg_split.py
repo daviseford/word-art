@@ -11,6 +11,13 @@ def strip_non_alpha(word):
     return ''.join(x for x in word if x not in exclusion_list)
 
 
+def fix_coordinate(str):
+    if len([x for x in str if x in ['(', ')']]) == 0:
+        return '%s+0' % str
+    else:
+        return str
+
+
 def plot_lengths(a):
     """
 
@@ -22,22 +29,17 @@ def plot_lengths(a):
     path_store = []
     path_str = 'M50 20j'
     count = 0
-    color = a[0].get('color', 'green')
+    color = a[0].get('color', 'black')
     for obj in a:
 
         if obj['color'] != color:
             print 'Changed colors from %s to %s' % (color, obj['color'])
-            print 'So I would need to start a new path here using the old point for reference'
-            last_point = str(parse_path(path_str).point(1.0))
+            last_point = fix_coordinate(str(parse_path(path_str).point(1.0)))
             new_path_start = 'M%s' % strip_non_alpha(last_point)
-
             res = {'color': color, 'path': parse_path(path_str)}
             path_store.append(res)  # Add the Path to the line_store
-
             path_str = new_path_start  # Start the new path
             color = obj['color']  # With the new color
-
-            # print new_path_start
 
         move = behavior_ref[count] + str(obj['length'])
         path_str = ' '.join([path_str, move])
@@ -45,7 +47,6 @@ def plot_lengths(a):
 
     # Add the last entry
     path_store.append({'color': color, 'path': parse_path(path_str)})
-    # print path_store
     return path_store
 
 
@@ -103,8 +104,8 @@ def run_svg():
     disvg(
         paths=[x['path'] for x in paths],
         colors=[x['color'] for x in paths],
-        nodes=[paths[0]['path'].point(0.0), paths[-1]['path'].point(1.0)],
-        node_radii=[3, 3],
+        # nodes=[paths[0]['path'].point(0.0), paths[-1]['path'].point(1.0)],
+        # node_radii=[3, 3],
         openinbrowser=False,
         **output_opts
     )

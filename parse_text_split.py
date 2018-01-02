@@ -23,28 +23,36 @@ def get_sentences(input_text):
         tokens_sentences = [tokenizer_words.tokenize(x) for x in nltk.sent_tokenize(input_text)]
         sentence_words = [filter_alpha(x) for x in tokens_sentences]
 
+        bg = '#2C565A'
+        primary = '#FC41DF'
+        secondary = '#5BDEEB'
         keywords = [
-            {'k': 'DOCTORSPLIT', 'c': '#02799a'},  # blue
-            {'k': 'SHARONSPLIT', 'c': '#E70F52'},  # pink
+            # {'k': 'DOCTORSPLIT', 'c': '#02799a'},  # blue
+            # {'k': 'SHARONSPLIT', 'c': '#E70F52'},  # pink
+            #
+            # {'k': 'DOCTORHOCKSTRASPLIT', 'c': 'black'},
+            # {'k': 'JEFFSPLIT', 'c': '#C7795F'},
+            # {'k': 'KATHYSPLIT', 'c': 'black'},
+            # {'k': 'PARRISHSPLIT', 'c': 'black'},
+            # {'k': 'SECTIONSPLIT', 'c': 'grey'},
+            # {'k': 'SHIRLEYSPLIT', 'c': 'black'},
 
-            {'k': 'DOCTORHOCKSTRASPLIT', 'c': 'black'},
-            {'k': 'JEFFSPLIT', 'c': '#C7795F'},
-            {'k': 'KATHYSPLIT', 'c': 'black'},
-            {'k': 'PARRISHSPLIT', 'c': 'black'},
-            {'k': 'SECTIONSPLIT', 'c': 'grey'},
-            {'k': 'SHIRLEYSPLIT', 'c': 'black'},
+            {'k': 'quality', 'c': primary},
+
         ]
-        color = 'green'
+        default_color = secondary
+
+
         store = []
         for arr_of_words in sentence_words:
+            c = default_color
             zz = [x.lower() for x in arr_of_words]
             for x in keywords:
                 if x['k'].lower() in zz:
-                    color = x['c']
+                    c = x['c']
 
-            store.append({'color': color, 'length': len(arr_of_words)})
+            store.append({'color': c, 'length': len(arr_of_words)})
 
-        # print store
         return store
     except Exception as e:
         raise e
