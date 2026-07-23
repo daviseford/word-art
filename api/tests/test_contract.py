@@ -34,6 +34,12 @@ def payload_for(kind, segment_count):
     raise AssertionError(f"Unknown payload kind: {kind}")
 
 
+def direction_sign(value):
+    if abs(value) < 1e-9:
+        return 0
+    return 1 if value > 0 else -1
+
+
 def flattened_split_segments(path_groups):
     flattened = []
     for group in path_groups:
@@ -44,8 +50,8 @@ def flattened_split_segments(path_groups):
                     "color": group["color"],
                     "length": segment.length(),
                     "direction": [
-                        0 if abs(delta.real) < 1e-9 else (1 if delta.real > 0 else -1),
-                        0 if abs(delta.imag) < 1e-9 else (1 if delta.imag > 0 else -1),
+                        direction_sign(delta.real),
+                        direction_sign(delta.imag),
                     ],
                 }
             )
@@ -67,12 +73,15 @@ def test_contract_loads_supported_version_and_required_sections():
 
 def test_request_defaults_and_null_semantics_match_handler_validation():
     defaults = CONTRACT["request"]["defaults"]
+    fields = CONTRACT["request"]["fields"]
     assert DEFAULT_COLORS == {
         "bg_color": defaults["bg_color"],
         "color": defaults["color"],
         "node_colors": defaults["node_color"],
         "split_color": defaults["split_color"],
     }
+    assert fields["color"]["nullable"] is False
+    assert fields["bg_color"]["nullable"] is False
 
     simple_path = plot_simple_lengths([1] * CONTRACT["quality"]["minimum_segment_count"])
     parsed = parse_arguments(json.dumps({"simple_path": simple_path}))
@@ -98,9 +107,13 @@ def test_request_defaults_and_null_semantics_match_handler_validation():
         defaults["node_color"],
     ]
 
+    for field in ("color", "bg_color"):
+        with pytest.raises(RequestValidationError, match=field):
+            parse_arguments(json.dumps({"simple_path": simple_path, field: None}))
+
 
 @pytest.mark.parametrize("kind", ["simple", "split", "fallback"])
-def test_quality_boundary_rejects_nineteen_and_accepts_twenty(kind):
+def test_quality_boundary_rejects_below_minimum_and_accepts_minimum(kind):
     minimum = CONTRACT["quality"]["minimum_segment_count"]
     assert MIN_SEGMENT_COUNT == minimum
     assert TOO_SIMPLE_MESSAGE == CONTRACT["quality"]["too_simple_message"]

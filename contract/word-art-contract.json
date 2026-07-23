@@ -48,11 +48,13 @@
       },
       "color": {
         "type": "hex_color",
-        "nullable": true
+        "optional": true,
+        "nullable": false
       },
       "bg_color": {
         "type": "hex_color",
-        "nullable": true
+        "optional": true,
+        "nullable": false
       },
       "node_colors": {
         "type": "two_hex_or_null_colors",
