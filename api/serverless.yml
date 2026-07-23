@@ -1,0 +1,50 @@
+service: word-art-serverless
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  runtime: python3.13
+  region: us-east-1
+  stage: dev
+  memorySize: 1024
+  timeout: 29
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:PutObjectAcl
+          Resource: arn:aws:s3:::word-art-svgs/*
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+
+package:
+  patterns:
+    - "!.git/**"
+    - "!.pytest_cache/**"
+    - "!.venv/**"
+    - "!**/__pycache__/**"
+    - "!**/*.py[cod]"
+    - "!node_modules/**"
+    - "!tests/**"
+    - "!scripts/**"
+    - "!AGENTS.md"
+    - "!README.md"
+    - "!package*.json"
+    - "!requirements-dev.txt"
+
+functions:
+  app:
+    handler: handler.endpoint
+    events:
+      - http:
+          path: /
+          method: post
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
