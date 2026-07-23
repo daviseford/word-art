@@ -1,23 +1,31 @@
-## Word Art
+# Word Art CLI
 
-### Setup (Python 2.7)
+The original Word Art prototype turns each sentence into a line segment whose length is the sentence's word count, rotating 90 degrees after every segment. This repository is now an algorithm/history reference; the deployed web flow lives in the sibling frontend and serverless repositories.
 
-First, take care of the requirements:
+## Repository family
 
-1. `pip install -r requirements.txt`
+- [`word-art`](https://github.com/daviseford/word-art): this Python CLI prototype
+- [`word-art-frontend`](https://github.com/daviseford/word-art-frontend): static browser client and system documentation
+- [`word-art-serverless`](https://github.com/daviseford/word-art-serverless): deployed SVG-generation Lambda
 
-2. `brew install caskformula/caskformula/inkscape`
+## Legacy runtime
 
+The code targets Python 2.7 and pins packages from 2017. Use an isolated legacy environment; do not install these packages into a current Python environment.
 
-### Commands
-
+```powershell
+py -2.7 -m pip install -r requirements.txt
+py -2.7 -m nltk.downloader punkt
+py -2.7 svg.py -f txt/purple_cow.txt -c purple
 ```
-word-art $ python svg.py -f txt/purple_cow.txt -c purple
 
-txt/purple_cow.txt has 282 sentences
+Generated SVGs are written to `output/`. The conversion script additionally expects legacy Inkscape CLI flags and `optipng`.
 
-Done! Created /word-art/output/purple_cow.svg
+## Verification
+
+There is no automated test suite. A dependency-free syntax check is available:
+
+```powershell
+py -2.7 -m py_compile parse_text.py parse_text_split.py svg.py svg_split.py
 ```
 
-`-f` is mandatory
-
+See the frontend repository's `docs/SYSTEM_ARCHITECTURE.md` and `docs/REVIVAL_AUDIT.md` for the multi-repository map, current status, and known defects.
