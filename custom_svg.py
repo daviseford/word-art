@@ -1,9 +1,3 @@
-from __future__ import division, absolute_import, print_function
-
-try:
-    import unzip_requirements
-except ImportError:
-    pass
 """This submodule contains tools for creating svg files from paths and path
 segments."""
 

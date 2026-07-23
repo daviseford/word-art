@@ -1,11 +1,5 @@
-try:
-    import unzip_requirements
-except ImportError:
-    pass
-
 import logging
 import string
-import traceback
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,23 +18,15 @@ def get_sentences(input_text, split_dict, primary_color):
     :param split_dict: { words: [str,str], color: str }
     :return: { 'color' : str , 'length': int }
     """
-    try:
-        array_of_sentences = split_into_sentences(input_text)
-        default_color = primary_color
-        store = []
-        for array_of_words in array_of_sentences:
-            segment_color = default_color
-            for highlight_word in split_dict['words']:
-                if highlight_word.lower() in array_of_words:
-                    segment_color = split_dict['color']
+    store = []
+    for sentence in split_into_sentences(input_text):
+        segment_color = primary_color
+        if any(highlight_word.lower() in sentence for highlight_word in split_dict['words']):
+            segment_color = split_dict['color']
 
-            store.append({'color': segment_color, 'length': len(array_of_words)})
+        store.append({'color': segment_color, 'length': len(sentence.split())})
 
-        return store
-    except Exception as e:
-        traceback.print_exc()
-        logger.info(e)
-        raise e
+    return store
 
 
 def filter_alpha(a_list):
@@ -75,6 +61,9 @@ def plot_lengths(a):
     :param a: [{'color':'','length':5}]
     :return: [{'color': 'red', 'path': Path()}]
     """
+    if not a:
+        raise ValueError('At least one path segment is required')
+
     # Turn left 90 degrees each time
     behavior_ref = ['h -', 'v ', 'h ', 'v -']
     path_store = []
@@ -107,12 +96,7 @@ def build_pre_parsed_path_str(json_obj):
     :param input_text: str
     :return: [{'color':'red','path':Path()}]
     """
-    try:
-        return plot_lengths(json_obj['split_pre_parsed'])
-    except Exception as e:
-        logger.info(e)
-        traceback.print_exc()
-        return []
+    return plot_lengths(json_obj['split_pre_parsed'])
 
 
 def build_path_str(json_obj):
@@ -121,13 +105,8 @@ def build_path_str(json_obj):
     :param input_text: str
     :return: [{'color':'red','path':Path()}]
     """
-    try:
-        sentence_lengths = get_sentences(json_obj['text'], json_obj['split'], json_obj['color'])
-        return plot_lengths(sentence_lengths)
-    except Exception as e:
-        logger.info(e)
-        traceback.print_exc()
-        return []
+    sentence_lengths = get_sentences(json_obj['text'], json_obj['split'], json_obj['color'])
+    return plot_lengths(sentence_lengths)
 
 def satisfies_split_conditions(json_obj):
     """
@@ -149,29 +128,23 @@ def save_split_xml_to_s3(json_obj):
     :param json_obj:
     :return:
     """
-    try:
-        if json_obj['split_pre_parsed'] is not None and len(json_obj['split_pre_parsed']) > 0:
-            logger.info('Using split_pre_parsed calculations with %s sentences' % len(json_obj['split_pre_parsed']))
-            paths = build_pre_parsed_path_str(json_obj)
-        else:
-            logger.info('Using split get_paths calculations')
-            paths = build_path_str(json_obj)
+    if json_obj['split_pre_parsed']:
+        logger.info('Using split_pre_parsed calculations with %s sentences' % len(json_obj['split_pre_parsed']))
+        paths = build_pre_parsed_path_str(json_obj)
+    else:
+        logger.info('Using split get_paths calculations')
+        paths = build_path_str(json_obj)
 
-        if json_obj['node_colors'] is not None:
-            node_opts = {'node_colors': json_obj['node_colors'], 'node_radii': [1, 1]}
-        else:
-            node_opts = {'node_colors': None, 'node_radii': [0, 0]}
+    if json_obj['node_colors'] is not None:
+        node_opts = {'node_colors': json_obj['node_colors'], 'node_radii': [1, 1]}
+    else:
+        node_opts = {'node_colors': None, 'node_radii': [0, 0]}
 
-        url = davis_disvg(
-            paths=[x['path'] for x in paths],
-            colors=[x['color'] for x in paths],
-            nodes=[paths[0]['path'].point(0.0), paths[-1]['path'].point(1.0)],
-            checksum=json_obj['checksum'],
-            bg_color=json_obj['bg_color'],
-            **node_opts
-        )
-
-        return url
-    except Exception as e:
-        traceback.print_exc()
-        return 'Error building xml_string: %s' % str(e)
+    return davis_disvg(
+        paths=[x['path'] for x in paths],
+        colors=[x['color'] for x in paths],
+        nodes=[paths[0]['path'].point(0.0), paths[-1]['path'].point(1.0)],
+        checksum=json_obj['checksum'],
+        bg_color=json_obj['bg_color'],
+        **node_opts
+    )

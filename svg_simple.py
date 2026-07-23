@@ -1,10 +1,4 @@
-try:
-    import unzip_requirements
-except ImportError:
-    pass
-
 import logging
-import traceback
 
 from svgpathtools import parse_path
 
@@ -58,28 +52,23 @@ def save_simple_xml_to_s3(json_obj):
     :param json_obj:
     :return: str
     """
-    try:
-        if json_obj['simple_path'] is not None and len(json_obj['simple_path']) > 0:
-            logger.info('Using simple_path parameter')
-            paths = get_simple_preparsed_paths(json_obj['simple_path'])
-        else:
-            logger.info('Using simple get_paths calculations')
-            paths = get_simple_paths(json_obj['text'])
+    if json_obj['simple_path']:
+        logger.info('Using simple_path parameter')
+        paths = get_simple_preparsed_paths(json_obj['simple_path'])
+    else:
+        logger.info('Using simple get_paths calculations')
+        paths = get_simple_paths(json_obj['text'])
 
-        if json_obj['node_colors'] is not None:
-            node_opts = {'node_colors': json_obj['node_colors'], 'node_radii': [1, 1]}
-        else:
-            node_opts = {'node_colors': None, 'node_radii': [0, 0]}
+    if json_obj['node_colors'] is not None:
+        node_opts = {'node_colors': json_obj['node_colors'], 'node_radii': [1, 1]}
+    else:
+        node_opts = {'node_colors': None, 'node_radii': [0, 0]}
 
-        url = davis_disvg(
-            paths=paths,
-            colors=[json_obj['color']],
-            nodes=[paths.point(0.0), paths.point(1.0)],
-            checksum=json_obj['checksum'],
-            bg_color=json_obj['bg_color'],
-            **node_opts
-        )
-        return url
-    except Exception as e:
-        traceback.print_exc()
-        return 'Error building xml_string: %s' % str(e)
+    return davis_disvg(
+        paths=paths,
+        colors=[json_obj['color']],
+        nodes=[paths.point(0.0), paths.point(1.0)],
+        checksum=json_obj['checksum'],
+        bg_color=json_obj['bg_color'],
+        **node_opts
+    )

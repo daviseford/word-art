@@ -1,9 +1,16 @@
 {
   "name": "word-art-serverless",
-  "description": "",
-  "version": "0.1.0",
-  "dependencies": {},
+  "version": "0.2.0",
+  "private": true,
+  "description": "AWS Lambda service that renders and stores Word Art SVGs",
+  "scripts": {
+    "package": "serverless package",
+    "test": "python -m pytest"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "devDependencies": {
-    "serverless-python-requirements": "^3.3.0"
+    "serverless": "4.40.0"
   }
 }

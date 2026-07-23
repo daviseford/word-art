@@ -1,36 +1,50 @@
-# serverless.yml
 service: word-art-serverless
+frameworkVersion: "4"
 
 provider:
   name: aws
-  runtime: python2.7
+  runtime: python3.13
   region: us-east-1
   stage: dev
-  memorySize: 3000  # Overwrite the default memory size. Default is 1024
-  timeout: 300      # Optional, in seconds, default is 6
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - s3:*
-      Resource: "arn:aws:s3:::word-art-svgs*"
-
-# https://github.com/UnitedIncome/serverless-python-requirements
-plugins:
-  - serverless-python-requirements
+  memorySize: 1024
+  timeout: 29
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:PutObjectAcl
+          Resource: arn:aws:s3:::word-art-svgs/*
 
 custom:
   pythonRequirements:
-    # call `pip install` inside a container - useful for packages that have native dependencies (scipy et-al)
     dockerizePip: true
 
-    # aws lambda has an after-extraction size limit - with native dependencies we pass the limit quickly
-    # zip the requirements and extract them on the fly (see handler.py)
-    zip: true
+package:
+  patterns:
+    - "!.git/**"
+    - "!.pytest_cache/**"
+    - "!.venv/**"
+    - "!**/__pycache__/**"
+    - "!**/*.py[cod]"
+    - "!node_modules/**"
+    - "!tests/**"
+    - "!scripts/**"
+    - "!AGENTS.md"
+    - "!README.md"
+    - "!package*.json"
+    - "!requirements-dev.txt"
 
 functions:
   app:
     handler: handler.endpoint
     events:
-      - http: ANY /
-        cors: true
-        method: post
+      - http:
+          path: /
+          method: post
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type

@@ -1,77 +1,75 @@
-## Word Art Serverless Endpoint
+# Word Art serverless SVG API
 
-### Endpoint and Parameters
+The AWS Lambda/API Gateway backend for Word Art SVG generation. It validates the browser request, renders SVG XML, deduplicates by exact object key, and stores the result in the public `word-art-svgs` bucket.
 
-**Endpoint:** https://gy2aa8c57c.execute-api.us-east-1.amazonaws.com/dev
+## Repository family
 
-**Parameters:**
+- [`word-art`](https://github.com/daviseford/word-art): original CLI prototype
+- [`word-art-frontend`](https://github.com/daviseford/word-art-frontend): browser client and cross-repository architecture docs
+- [`word-art-serverless`](https://github.com/daviseford/word-art-serverless): this SVG backend
 
-+ `text` - `str` - **Required**
-+ `node_colors` - `array` - An array of 2 hex codes, like `['#FFF', '#CCC']`. These codes are used for the start and end node colors, respectively.
-+ `color` - `str` - A hex code,, like `'#FFF'`. This is the color of the path
+Read the frontend repository's `docs/SYSTEM_ARCHITECTURE.md` before changing request fields, checksums, result URLs, or storage behavior.
 
-+ `split` - `object` - An object like so: 
+## Local setup
+
+Python 3.13 is the deployment target. Node 18.17 or newer is needed only for Serverless packaging.
+
+```sh
+python -m venv .venv
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+npm ci
+python -m pytest
+```
+
+The tests use an in-memory fake S3 client. They exercise request validation, exact-key deduplication, both rendering modes, SVG metadata, and failure responses without reading or writing AWS.
+
+## API contract
+
+The frontend normally sends either `simple_path` or the pair `split` and `split_pre_parsed`, plus colors and a decimal `checksum`. Normalized `text` remains available as a legacy fallback. Successful responses retain the historical shape:
+
 ```json
 {
-    "words": ["quality", "knowledge", "logic"],
-    "color": "#000"
+  "arguments": {},
+  "duplicate": false,
+  "s3_url": "https://s3.amazonaws.com/word-art-svgs/123456.svg"
 }
 ```
 
+Invalid requests return 400 with `{ "err": "..." }`. Requests with fewer than 20 rendered segments are rejected with `Your prompt is too simple. Try at least 20 distinct sentences`. Unexpected rendering or storage failures return 500 with a generic error. Uploaded objects use `image/svg+xml`.
 
-### Requires Python 2.7
+## Packaging
 
-First, take care of the requirements:
-
-1. `pip install -r requirements.txt`
-
-2. `brew install caskformula/caskformula/inkscape`
-
-3. `npm install -g serverless`
-
-4. `sls plugin install -n serverless-python-requirements`
-
-5. **Requires Docker (serverless-python-requirements uses Docker to build)**
-
-### Commands
-
-`sls deploy`
-
-`sls logs -f app --tail`
-
-`sls deploy && sls logs -f app --tail`
-
-
-### Application flow
-
-1. POST Request to [the endpoint](https://gy2aa8c57c.execute-api.us-east-1.amazonaws.com/dev)
-
-```
-POST /dev HTTP/1.1
-Host: gy2aa8c57c.execute-api.us-east-1.amazonaws.com
-Content-Type: application/json
-Cache-Control: no-cache
-Postman-Token: 87c7679b-0719-608d-016a-f10e6f00b276
-
-{
-	"text" : "I guess various sentences may lead to various structures. 
-	          A short one. Then a quick twist and run, further than we'd anticipated. 
-	          I guess. Well, I know that one thing is for certain - long, 
-	          run on sentences have a place here. But! So do quick ones. Tight little turns. 
-	          Another tactic would be to send out a long, long sentence, broken up by not 
-	          much else other than the occasional - well, yes, that - out of nowhere, how surprising. 
-	          The more sentences, the merrier. Try giving me a whole book :)",
-	"node_colors":["FF101A", "#CCC"],
-	"colors": ["#FF59E7"]
-}
+```sh
+npm run package
 ```
 
-2. The `text` is converted into an XML Path.
+Serverless Framework v4 has built-in Python dependency packaging. Native NumPy/SciPy wheels are built in Docker for Lambda's Linux environment, so Docker must be running. Packaging writes only to `.serverless/`; it does not deploy. Serverless v4 may require a Serverless account or access key even for local commands.
 
-3. The XML Path is converted into a full SVG file using `svgpathtools`.
+The verified Python 3.13 artifact is about 65.3 MB compressed and 207.8 MB unpacked. It fits Lambda's 250 MiB unpacked limit, but the NumPy/SciPy dependency tree leaves limited room for future growth.
 
-4. The contents of the file are checksummed using `sha1` and named `[file-checksum].svg`
+Production was upgraded in place and currently runs Lambda version 119 on Python 3.13 at the original API Gateway endpoint. Do not run another `serverless deploy`, `serverless remove`, or live handler invocation without explicit production approval and appropriately scoped credentials.
 
-5. The file is uploaded to S3. There is a check to ensure we do not upload duplicate files - hence the checksumming.
+## Low-quality cleanup
 
-6. The file's URL is returned as a JSON response like so: `{ 'statusCode': 200, 'body': {"s3_url": "https://s3.amazonaws.com/word-art-svgs/f3f5ea8d8cd19705f3d743c8897eddf0c0e3840a.svg"}`
+`scripts/cleanup_low_quality.py` inventories every SVG, counts parsed path segments, and pairs same-stem PNGs. It is dry-run by default:
+
+```sh
+python -m scripts.cleanup_low_quality --threshold 20
+```
+
+Applying cleanup requires a new backup directory. The script downloads and hashes every target, writes `manifest.json`, and only then calls S3 deletion:
+
+```sh
+python -m scripts.cleanup_low_quality --threshold 20 --apply --backup-dir /safe/new/path
+```
+
+S3 versioning is disabled on both buckets, so never apply without a recoverable backup directory.
+
+## Remaining risks
+
+- The route remains public and the browser-supplied checksum is collision-prone. Exact lookup fixes prefix collisions but does not make the checksum trustworthy.
+- Public-read uploads and public bucket listing are inherited production behavior, not a recommended new design.
+- The deployment artifact is close enough to Lambda's unpacked size limit that dependency changes must be followed by artifact-size inspection.
+- The separate PNG service is not present in the three known repositories.

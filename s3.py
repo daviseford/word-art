@@ -1,99 +1,67 @@
-try:
-    import unzip_requirements
-except ImportError:
-    pass
-
 import hashlib
 import logging
 
 import boto3
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-BUCKET = 'word-art-svgs'
+BUCKET = "word-art-svgs"
+_s3_client = None
 
 
-def get_checksum(str):
-    """
-    Generates a sha1 checksum for a given string
-    :param str:
-    :return: str
-    """
-    hash_object = hashlib.sha1(b'%s' % str)
-    hex_dig = hash_object.hexdigest()
-    return hex_dig
+def get_s3_client():
+    global _s3_client
+    if _s3_client is None:
+        _s3_client = boto3.client("s3")
+    return _s3_client
+
+
+def get_checksum(value):
+    return hashlib.sha1(value.encode("utf-8")).hexdigest()
 
 
 def get_filename(checksum):
-    """
-    Appends .svg to a checksum
-    :param checksum:
-    :return: str
-    """
-    return '%s.svg' % checksum
+    return f"{checksum}.svg"
+
+
+def get_public_url(filename):
+    return f"https://s3.amazonaws.com/{BUCKET}/{filename}"
 
 
 def is_duplicate_checksum(checksum):
-    """
-    Check if this file has been created before - if so, just return the S3 URL.
-    Returns None otherwise
+    if checksum is None:
+        return None
 
-    :param checksum: str
-    :return: str|None
-    """
-    s3 = boto3.client('s3')
-    response = s3.list_objects_v2(
-        Bucket=BUCKET,
-        EncodingType='url',
-        Prefix=checksum
-    )
-
-    if response['KeyCount'] > 0 and len(response['Contents']) > 0:
-        return 'https://s3.amazonaws.com/%s/%s' % (BUCKET, response['Contents'][0]['Key'])
-
-    return None
+    filename = get_filename(checksum)
+    try:
+        get_s3_client().head_object(Bucket=BUCKET, Key=filename)
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code")
+        if error_code in {"404", "NoSuchKey", "NotFound"}:
+            return None
+        raise
+    return get_public_url(filename)
 
 
 def upload_svg(filename, xml_string):
-    """
-    Uploads the SVG file to S3, and returns the URL of the object
-    :param filename: str
-    :param xml_string: str
-    :return: str
-    """
-    s3 = boto3.client('s3')
-    response = s3.put_object(
-        ACL='public-read',
-        Body=xml_string,
+    get_s3_client().put_object(
+        ACL="public-read",
+        Body=xml_string.encode("utf-8"),
         Bucket=BUCKET,
+        ContentType="image/svg+xml",
         Key=filename,
-        StorageClass='REDUCED_REDUNDANCY',
     )
-
-    return 'https://s3.amazonaws.com/%s/%s' % (BUCKET, filename)
+    return get_public_url(filename)
 
 
 def save_svg(xml_string, checksum=None):
-    """
-    Saves an XML string as a unique (checksummed) file in S3
-    And returns the URL of the file
-
-    Checks for duplicates along the way using sha1 to find collisions
-
-    :param xml_string:
-    :param checksum: str|None
-    :return: str
-    """
     if checksum is None:
-        checksum = get_checksum(xml_string)  # Get checksum of this file
-        existing_url = is_duplicate_checksum(checksum)  # Make sure it's unique
-        if existing_url is not None:  # We've generated this file before.
-            logger.info('Duplicate detected for %s' % checksum)
-            return existing_url  # If dupe_check has a value, it's a URL to an existing (duplicate) file.
+        checksum = get_checksum(xml_string)
+        existing_url = is_duplicate_checksum(checksum)
+        if existing_url is not None:
+            logger.info("Duplicate detected for %s", checksum)
+            return existing_url
 
-    # Usually, we've already checked for a duplicate - the above logic is just for cases
-    # where we need to generate the checksum on the backend
-    filename = get_filename(checksum)
-    url = upload_svg(filename, xml_string)
-    return url
+    return upload_svg(get_filename(checksum), xml_string)

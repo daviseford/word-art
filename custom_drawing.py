@@ -23,13 +23,6 @@ section by::
     drawing.defs.add(element)
 
 """
-from __future__ import unicode_literals
-
-try:
-    import unzip_requirements
-except ImportError:
-    pass
-
 from svgwrite.container import SVG
 from svgwrite.elementfactory import ElementFactory
 from svgwrite.utils import pretty_xml
@@ -119,15 +112,8 @@ class Drawing(SVG, ElementFactory):
         return arr
 
     def save_str(self, pretty=False):
-        try:
-            arr = self.write_str(pretty=pretty)
-            return ''.join(arr)
-        except Exception as e:
-            raise e
+        return ''.join(self.write_str(pretty=pretty))
 
     def save_to_s3(self, checksum=None, pretty=False):
-        try:
-            xml_string = ''.join(self.write_str(pretty=pretty))
-            return save_svg(xml_string, checksum)
-        except Exception as e:
-            raise e
+        xml_string = ''.join(self.write_str(pretty=pretty))
+        return save_svg(xml_string, checksum)
