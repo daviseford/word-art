@@ -14,6 +14,8 @@ work.
 
 ## Local development
 
+Use Node.js 24.11 or newer.
+
 ```sh
 npm ci
 npm test
@@ -23,7 +25,7 @@ npm start
 
 `npm start` builds once and serves `dist/` at `http://127.0.0.1:8080/`. Set `WORD_ART_PORT` to use another port. It intentionally does not submit anything until the form is used.
 
-The current lockfile still installs and the test/build baseline passes, but the Webpack 3/Babel dependency tree is obsolete and reports many security advisories. Keep dependency modernization separate from behavior changes. The former Webpack Dev Server 2 startup was removed because it crashes on current Node releases.
+The build uses Webpack 5, Babel 8, and jQuery 4. The committed lockfile installs with no known npm audit findings. The dependency-free local server remains separate from the production build toolchain.
 
 The form requires at least 20 distinct sentences before submitting. The production SVG Lambda independently rejects requests with fewer than 20 rendered segments. The local redesign uses `src/app.css`; Webpack copies it into `dist/app.css` during the build.
 

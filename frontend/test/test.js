@@ -1,7 +1,6 @@
 const Util = require('../src/util');
 const Config = require('../src/config');
 const Components = require('../src/components');
-const expect = require('chai').expect;
 
 
 describe('Util.checksum', function () {

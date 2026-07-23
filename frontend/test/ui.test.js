@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const expect = require('chai').expect;
 const Colors = require('../src/colors');
 const Components = require('../src/components');
 const Config = require('../src/config');
+const webpackConfig = require('../webpack.config');
 
 describe('generator interface', function () {
   const template = fs.readFileSync(
@@ -31,6 +31,19 @@ describe('generator interface', function () {
 
     expect(template).to.contain(`app.css?v=${versionExpression}`);
     expect(template).to.contain(`app.bundle.js?v=${versionExpression}`);
+  });
+
+  it('injects jQuery 4 as a callable browser function', function () {
+    const provider = webpackConfig.plugins.find(
+      plugin => plugin.constructor.name === 'ProvidePlugin',
+    );
+    const expectedImport = ['jquery', 'default'];
+
+    expect(provider).to.not.equal(undefined);
+    expect(provider.definitions.$).to.deep.equal(expectedImport);
+    expect(provider.definitions.jQuery).to.deep.equal(expectedImport);
+    expect(provider.definitions['window.$']).to.deep.equal(expectedImport);
+    expect(provider.definitions['window.jQuery']).to.deep.equal(expectedImport);
   });
 
   it('selects the configured palette by default', function () {

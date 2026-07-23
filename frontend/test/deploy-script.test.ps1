@@ -41,6 +41,30 @@ function Assert-Count {
   }
 }
 
+function Assert-BuildOutputRejected {
+  $global:WordArtDeployTestEvents.Clear()
+  $RejectedBuildOutput = $false
+
+  try {
+    & (Join-Path $RepositoryRoot 'deploy.ps1')
+  }
+  catch {
+    if ($_.Exception.Message -like 'Build output differs from the deployment allowlist:*') {
+      $RejectedBuildOutput = $true
+    }
+    else {
+      throw
+    }
+  }
+
+  if (-not $RejectedBuildOutput) {
+    throw 'Unexpected build output must stop deployment.'
+  }
+  Assert-Count @(
+    $global:WordArtDeployTestEvents | Where-Object { $_ -like 'aws s3 sync *' }
+  ) 0 'Rejected build output must not reach S3 synchronization.'
+}
+
 & (Join-Path $RepositoryRoot 'deploy.ps1')
 $DryRunEvents = @($global:WordArtDeployTestEvents)
 
@@ -73,5 +97,34 @@ Assert-Count @(
 Assert-Count @(
   $ApplyEvents | Where-Object { $_ -like 'web *' }
 ) 3 'Apply mode must verify all deployed artifacts.'
+
+$UnexpectedArtifact = Join-Path $RepositoryRoot 'dist\unexpected.txt'
+try {
+  Set-Content -LiteralPath $UnexpectedArtifact -Value 'not deployable'
+  Assert-BuildOutputRejected
+}
+finally {
+  if (Test-Path -LiteralPath $UnexpectedArtifact) {
+    Remove-Item -LiteralPath $UnexpectedArtifact -Force
+  }
+}
+
+$CanonicalBundle = Join-Path $RepositoryRoot 'dist\app.bundle.js'
+$CaseVariantBundle = Join-Path $RepositoryRoot 'dist\APP.BUNDLE.JS'
+$IntermediateBundle = Join-Path $RepositoryRoot 'dist\app.bundle.case-test'
+try {
+  Move-Item -LiteralPath $CanonicalBundle -Destination $IntermediateBundle
+  Move-Item -LiteralPath $IntermediateBundle -Destination $CaseVariantBundle
+  Assert-BuildOutputRejected
+}
+finally {
+  if (Test-Path -LiteralPath $IntermediateBundle) {
+    Move-Item -LiteralPath $IntermediateBundle -Destination $CanonicalBundle
+  }
+  elseif (Test-Path -LiteralPath $CaseVariantBundle) {
+    Move-Item -LiteralPath $CaseVariantBundle -Destination $IntermediateBundle
+    Move-Item -LiteralPath $IntermediateBundle -Destination $CanonicalBundle
+  }
+}
 
 Write-Output 'deploy.ps1 behavior OK'
