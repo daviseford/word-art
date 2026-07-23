@@ -1,0 +1,239 @@
+{
+  "schema": "word-art-contract",
+  "version": 1,
+  "palette": {
+    "governed_fields": [
+      "bg_color",
+      "color",
+      "node_colors",
+      "split_color"
+    ],
+    "field_types": {
+      "bg_color": "hex_color",
+      "color": "hex_color",
+      "node_colors": "two_hex_colors",
+      "split_color": "hex_color"
+    },
+    "node_color_count": 2,
+    "display_metadata_fields": [
+      "id",
+      "name"
+    ]
+  },
+  "quality": {
+    "minimum_segment_count": 20,
+    "too_simple_message": "Your prompt is too simple. Try at least 20 distinct sentences",
+    "frontend_gate": {
+      "measure": "distinct_normalized_sentences",
+      "purpose": "prevent submission until the browser has enough unique normalized sentences"
+    },
+    "api_gate": {
+      "measure": "rendered_path_segments",
+      "purpose": "reject simple, split, or fallback requests whose rendered geometry is below the boundary"
+    }
+  },
+  "request": {
+    "fields": {
+      "simple_path": {
+        "type": "svg_path_string",
+        "nullable": true
+      },
+      "split_pre_parsed": {
+        "type": "array_of_color_length_objects",
+        "nullable": true
+      },
+      "text": {
+        "type": "normalized_string",
+        "nullable": true
+      },
+      "color": {
+        "type": "hex_color",
+        "optional": true,
+        "nullable": false
+      },
+      "bg_color": {
+        "type": "hex_color",
+        "optional": true,
+        "nullable": false
+      },
+      "node_colors": {
+        "type": "two_hex_or_null_colors",
+        "nullable": true
+      },
+      "split": {
+        "type": "words_and_optional_color_object",
+        "nullable": true
+      },
+      "version": {
+        "type": "number",
+        "api_handling": "ignored"
+      },
+      "checksum": {
+        "type": "decimal_string",
+        "nullable": true
+      }
+    },
+    "defaults": {
+      "bg_color": "#FFF",
+      "color": "#14B6D4",
+      "node_color": "#F26101",
+      "split_color": "#F22F00"
+    },
+    "null_semantics": {
+      "node_colors": "missing or null hides endpoint nodes; null entries use node_color",
+      "split.color": "missing or null uses split_color",
+      "checksum": "missing derives the object key from the rendered SVG SHA-1"
+    },
+    "svg_response": {
+      "success_fields": [
+        "arguments",
+        "duplicate",
+        "s3_url"
+      ],
+      "error_field": "err"
+    }
+  },
+  "sentence_parsing": {
+    "frontend_examples": [
+      {
+        "name": "duplicate normalized sentences",
+        "input": " One! Two? One. Three. ",
+        "normalized": "one.two.one.three.",
+        "sentences": [
+          "one",
+          "two",
+          "one",
+          "three"
+        ],
+        "lengths": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "distinct_count": 3
+      },
+      {
+        "name": "punctuation spacing and contractions",
+        "input": "Don't stop... 1,234 stars - shine!\nKeep-going?",
+        "normalized": "dont stop.1234 stars shine.keep going.",
+        "sentences": [
+          "dont stop",
+          "1234 stars shine",
+          "keep going"
+        ],
+        "lengths": [
+          2,
+          3,
+          2
+        ],
+        "distinct_count": 3
+      }
+    ],
+    "api_fallback_examples": [
+      {
+        "name": "ignore an empty trailing segment",
+        "input": "one two.three.",
+        "sentences": [
+          "one two",
+          "three"
+        ],
+        "lengths": [
+          2,
+          1
+        ]
+      }
+    ]
+  },
+  "turtle_path": {
+    "origin": "M50 20j",
+    "direction_cycle": [
+      "left",
+      "down",
+      "right",
+      "up"
+    ],
+    "direction_vectors": [
+      [
+        -1,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        0,
+        -1
+      ]
+    ],
+    "command_cycle": [
+      "h -",
+      "v ",
+      "h ",
+      "v -"
+    ],
+    "simple_example": {
+      "lengths": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "path": "M50 20j h -2 v 3 h 4 v -5 h -6"
+    },
+    "split_example": {
+      "text": "alpha bravo.charlie delta.echo foxtrot.golf hotel.india juliet.",
+      "highlight_words": [
+        "charlie",
+        "golf"
+      ],
+      "primary_color": "#112233",
+      "highlight_color": "#FF0000",
+      "segments": [
+        {
+          "color": "#112233",
+          "length": 2
+        },
+        {
+          "color": "#FF0000",
+          "length": 2
+        },
+        {
+          "color": "#112233",
+          "length": 2
+        },
+        {
+          "color": "#FF0000",
+          "length": 2
+        },
+        {
+          "color": "#112233",
+          "length": 2
+        }
+      ],
+      "path": "M50 20j h -2 v 2 h 2 v -2 h -2"
+    }
+  },
+  "external_boundaries": {
+    "png_conversion": {
+      "ownership": "external_black_box",
+      "request_fields": [
+        "url",
+        "bg_color"
+      ],
+      "response_field": "svg_url",
+      "executable_schema": false
+    },
+    "gallery": {
+      "ownership_repository": "daviseford-landing-page",
+      "role": "external_consumer",
+      "executable_schema": false
+    }
+  }
+}

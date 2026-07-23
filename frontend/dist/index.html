@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Art Generator</title>
+  <meta name="description" content="Turn the rhythm of a book, article, or speech into a downloadable generative artwork.">
+  <meta property="og:site_name" content="daviseford">
+  <meta property="og:title" content="Word Art Generator">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://daviseford.com/word-art/">
+  <meta property="og:description" content="Every sentence becomes a line. Every story leaves a shape.">
+  <link rel="canonical" href="https://daviseford.com/word-art/">
+  <link rel="stylesheet" href="app.css?v=174ba38e9315">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=eE5za3Wkak">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=eE5za3Wkak">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=eE5za3Wkak">
+  <link rel="manifest" href="/site.webmanifest?v=eE5za3Wkak">
+  <meta name="theme-color" content="#e8f0f5">
+</head>
+<body>
+  <a class="skip-link" href="#composer">Skip to the composer</a>
+
+  <header class="site-header">
+    <nav class="site-nav section-shell" aria-label="Primary navigation">
+      <a class="site-nav__brand" href="https://daviseford.com/">Davis E. Ford</a>
+      <div class="site-nav__links">
+        <a href="https://daviseford.com/pages/word-art-gallery.html">Gallery</a>
+        <a href="https://daviseford.com/blog/">Blog</a>
+        <a href="https://github.com/daviseford/word-art-frontend">Source</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero section-shell" aria-labelledby="page-title">
+      <div class="hero__copy">
+        <p class="eyebrow">Generative text art</p>
+        <h1 id="page-title">Turn sentences into a single line.</h1>
+        <p class="hero__lede">Sentence length sets each segment. The path turns left and keeps reading.</p>
+        <div class="hero__actions">
+          <a class="button button--primary" href="#composer">Create your own</a>
+          <a class="button button--text" href="https://daviseford.com/pages/word-art-gallery.html">Browse the gallery →</a>
+        </div>
+      </div>
+      <figure class="hero-art">
+        <svg viewBox="35 65 390 145" role="img" aria-labelledby="path-title path-description">
+          <title id="path-title">How sentences become a geometric path</title>
+          <desc id="path-description">Three sentences become three connected segments. More words make a longer segment, and each sentence turns the path left.</desc>
+          <path class="hero-art__segment hero-art__segment--one" pathLength="1" d="M55 185 H175" />
+          <path class="hero-art__segment hero-art__segment--two" pathLength="1" d="M175 185 V105" />
+          <path class="hero-art__segment hero-art__segment--three" pathLength="1" d="M175 105 H390" />
+          <circle cx="55" cy="185" r="7" class="hero-art__start" />
+          <circle cx="390" cy="105" r="7" class="hero-art__end" />
+          <text x="86" y="174" class="hero-art__label hero-art__label--one">4 words</text>
+          <text x="186" y="154" class="hero-art__label hero-art__label--two">3 words</text>
+          <text x="258" y="94" class="hero-art__label hero-art__label--three">7 words</text>
+        </svg>
+        <figcaption><span>one sentence</span><span>one segment</span><span>then turn left</span></figcaption>
+      </figure>
+    </section>
+
+    <section class="composer-section" id="composer" aria-labelledby="composer-title">
+      <div class="section-shell">
+        <div class="section-heading">
+          <h2 id="composer-title">Make a composition.</h2>
+        </div>
+
+        <div class="studio-layout">
+          <div class="composer-panel">
+            <div id="display_loading"></div>
+            <div id="display_results"></div>
+
+            <div class="palette-control">
+              <div class="palette-control__heading">
+                <label for="preset_color_select">Palette</label>
+                <span>Sets the canvas, path, endpoints, and highlights.</span>
+              </div>
+              <select id="preset_color_select" name="preset_color_select"></select>
+              <div id="preset_color_swatch"></div>
+            </div>
+
+            <form id="word_art_form">
+              <div class="field field--text">
+                <div class="field__label-row">
+                  <label for="input_text">Your text <span>Required</span></label>
+                  <span id="sentence_count" class="sentence-count" aria-live="polite">0 distinct sentences</span>
+                </div>
+                <textarea id="input_text" name="input_text" rows="7" aria-describedby="input_text_help" required placeholder="Paste a chapter, article, speech, or collection of thoughts…"></textarea>
+                <p id="input_text_help" class="field__help">Need text? Try a
+                  <a href="https://www.gutenberg.org/browse/scores/top" target="_blank" rel="noopener">Project Gutenberg book</a>;
+                  its headers and footers are removed automatically.
+                </p>
+              </div>
+
+              <details class="advanced-controls" open>
+                <summary>Color & highlight controls <span>Optional</span></summary>
+                <div class="advanced-grid">
+                  <div class="field">
+                    <label for="input_line_color">Path color</label>
+                    <div class="color-input">
+                      <input class="color-input__picker" id="input_line_color_picker" type="color" value="#185A8D" aria-label="Choose path color">
+                      <input id="input_line_color" name="input_line_color" placeholder="#185A8D" type="text" aria-describedby="input_line_color_help">
+                    </div>
+                    <p id="input_line_color_help" class="field__help">The continuous sentence path.</p>
+                  </div>
+                  <div class="field">
+                    <label for="input_line_bg_color">Canvas color</label>
+                    <div class="color-input">
+                      <input class="color-input__picker" id="input_line_bg_color_picker" type="color" value="#F1F5F7" aria-label="Choose canvas color">
+                      <input id="input_line_bg_color" name="input_line_bg_color" placeholder="#F1F5F7" type="text" aria-describedby="input_line_bg_color_help">
+                    </div>
+                    <p id="input_line_bg_color_help" class="field__help">The composition's canvas.</p>
+                  </div>
+                  <div class="field">
+                    <label for="input_node_colors">Start & end points</label>
+                    <input id="input_node_colors" name="input_node_colors" placeholder="#D0503F, #E6A23C" type="text" aria-describedby="input_node_colors_help">
+                    <p id="input_node_colors_help" class="field__help">Two comma-separated colors.</p>
+                  </div>
+                  <div class="field">
+                    <label for="input_split_words">Words to highlight</label>
+                    <input id="input_split_words" name="input_split_words" placeholder="memory, home, wonder" type="text" aria-describedby="input_split_words_help">
+                    <p id="input_split_words_help" class="field__help">Sentences containing these words change color.</p>
+                  </div>
+                  <div class="field advanced-grid__wide">
+                    <label for="input_split_color">Highlight color</label>
+                    <div class="color-input">
+                      <input class="color-input__picker" id="input_split_color_picker" type="color" value="#B74132" aria-label="Choose highlight color">
+                      <input id="input_split_color" name="input_split_color" placeholder="#B74132" type="text" aria-describedby="input_split_color_help">
+                    </div>
+                    <p id="input_split_color_help" class="field__help">Used only when highlight words are present.</p>
+                  </div>
+                </div>
+              </details>
+
+              <button class="submit-button" name="submit" type="submit">Generate composition <span aria-hidden="true">→</span></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="section-shell site-footer__inner">
+      <p>A generative-art experiment by Davis E. Ford.</p>
+      <a href="mailto:davis.e.ford.alt+website@gmail.com">Email me</a>
+    </div>
+  </footer>
+  <script src="app.bundle.js?v=174ba38e9315"></script>
+</body>
+</html>

@@ -93,6 +93,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+.pytest_cache/
 nosetests.xml
 coverage.xml
 *.cover
@@ -155,13 +156,11 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+bin/
+include/
+node_modules/
 .idea/
-
-
-/cli-reference/output
-
-cli-reference/txt/making_a_pearl.txt
-cli-reference/txt/aa_sayings.txt
-cli-reference/txt/l*.txt
-
-cli-reference/sharon.sh
+.serverless
+.requirements
+.requirements.zip
+unzip_requirements.py

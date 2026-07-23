@@ -1,31 +1,63 @@
-# Word Art CLI
+# Word Art
 
-The original Word Art prototype turns each sentence into a line segment whose length is the sentence's word count, rotating 90 degrees after every segment. This repository is now an algorithm/history reference; the deployed web flow lives in the sibling frontend and serverless repositories.
+Word Art turns sentence word counts into a repeatedly turning SVG path. This is
+the canonical product repository for the browser generator, the SVG-generation
+API, and the original command-line prototype.
 
-## Repository family
+## Repository layout
 
-- [`word-art`](https://github.com/daviseford/word-art): this Python CLI prototype
-- [`word-art-frontend`](https://github.com/daviseford/word-art-frontend): static browser client and system documentation
-- [`word-art-serverless`](https://github.com/daviseford/word-art-serverless): deployed SVG-generation Lambda
+| Path | Role | Production component? |
+| --- | --- | --- |
+| [`frontend/`](frontend/) | Static browser UI, text normalization, request construction, and result display | Yes |
+| [`api/`](api/) | Python 3.13 Lambda that validates requests, renders SVG, and stores it in S3 | Yes |
+| [`cli-reference/`](cli-reference/) | Original Python 2 algorithm and history reference | No |
+| [`docs/`](docs/) | Product architecture, revival findings, deployment guidance, and plans | Documentation |
+| [`contract/word-art-contract.json`](contract/word-art-contract.json) | Test-enforced frontend/API behavior contract | Test authority only |
 
-## Legacy runtime
+Start with [the system architecture](docs/SYSTEM_ARCHITECTURE.md), then read
+[the revival audit](docs/REVIVAL_AUDIT.md) before modernization, production
+administration, or contract changes.
 
-The code targets Python 2.7 and pins packages from 2017. Use an isolated legacy environment; do not install these packages into a current Python environment.
+## Local verification
+
+Each component remains an independent path-local project. There is no root
+workspace, shared runtime environment, or root deployment command.
 
 ```powershell
-py -2.7 -m pip install -r requirements.txt
-py -2.7 -m nltk.downloader punkt
-py -2.7 svg.py -f txt/purple_cow.txt -c purple
-```
+# Browser client
+cd frontend
+npm ci
+npm test
+npm run build
 
-Generated SVGs are written to `output/`. The conversion script additionally expects legacy Inkscape CLI flags and `optipng`.
+# SVG API
+cd ..\api
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest
 
-## Verification
-
-There is no automated test suite. A dependency-free syntax check is available:
-
-```powershell
+# Historical CLI syntax only
+cd ..\cli-reference
 py -2.7 -m py_compile parse_text.py parse_text_split.py svg.py svg_split.py
 ```
 
-See the frontend repository's `docs/SYSTEM_ARCHITECTURE.md` and `docs/REVIVAL_AUDIT.md` for the multi-repository map, current status, and known defects.
+See the component README and `AGENTS.md` before changing that component.
+
+## External boundaries
+
+The PNG-conversion endpoint is a deployed black box whose source is not present
+in this repository. Preserve its observed `{ url, bg_color }` request and
+`svg_url` response until the service is recovered or replaced.
+
+The public gallery is owned by the separate `daviseford-landing-page`
+repository. It consumes the generated public objects but is not built or
+deployed from this checkout.
+
+## Production safety
+
+Cloning, building, testing, packaging, or merging this repository does not
+deploy production. Do not submit successful generation probes, upload frontend
+artifacts, deploy or remove the Serverless stack, clean up bucket objects, or
+change repository archive settings without explicit approval. The frontend
+deployment command is dry-run-first; see the
+[deployment runbook](docs/FRONTEND_DEPLOYMENT.md).

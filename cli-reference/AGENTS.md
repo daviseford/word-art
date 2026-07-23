@@ -1,0 +1,33 @@
+# AGENTS.md
+
+## Repository role
+
+This directory contains the original command-line prototype for the Word Art
+system. It turns sentence word counts into a repeatedly turning SVG path. It is
+an algorithm and history reference; the active browser and API under
+`../frontend/` and `../api/` do not call it.
+
+The product architecture and revival audit live in `../docs/`.
+
+## Runtime and commands
+
+- The code targets Python 2.7 and uses Python 2 `print` syntax.
+- Pinned libraries in `requirements.txt` are from 2017. Install them only in an isolated legacy environment.
+- Syntax check: `py -2.7 -m py_compile parse_text.py parse_text_split.py svg.py svg_split.py`
+- Historical example: `py -2.7 svg.py -f txt/purple_cow.txt -c purple`
+- Generated files belong in `output/`, which is ignored by Git.
+
+There is no automated test suite. Add focused tests before changing parsing or path-generation behavior.
+
+## Change rules
+
+- Treat `parse_text.py` and `svg.py` as the original simple-rendering pipeline.
+- Treat `parse_text_split.py` and `svg_split.py` as the original highlighted-segment experiment.
+- Do not assume a fix here changes production. Port intentional behavior changes separately to `../api/` and `../frontend/`.
+- Preserve the core visual rule unless a task explicitly changes it: one segment per sentence, segment length equals word count, and SVG direction rotates through left/down/right/up.
+- Keep sample texts as fixtures; do not add copyrighted or private submissions.
+- Do not run upload or deployment actions from this repository.
+
+## Verification
+
+For documentation-only changes, check Markdown links and run the Python 2 syntax command above. For behavior changes, add a test covering sentence parsing and the resulting SVG path before modifying production code.

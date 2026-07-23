@@ -2,34 +2,60 @@
 
 ## Repository role
 
-This repository is the original command-line prototype for the Word Art system. It turns sentence word counts into a repeatedly turning SVG path. It is useful as an algorithm and history reference; it is not called by the deployed web application.
+This is the canonical Word Art product repository. The active browser client
+and SVG API remain independent projects under `frontend/` and `api/`. The
+Python 2 prototype under `cli-reference/` is an algorithm and history reference
+only.
 
-Sibling repositories are normally checked out beside this one:
+The PNG-conversion service is an external black box, and the public gallery is
+owned by the separate `daviseford-landing-page` repository. Do not infer that
+either service is implemented here.
 
-- `../word-art-frontend`: browser UI and client-side preprocessing
-- `../word-art-serverless`: deployed SVG-generation Lambda
+Read `docs/SYSTEM_ARCHITECTURE.md` before changing request fields, checksums,
+result URLs, persistence behavior, or external boundaries. Read
+`docs/REVIVAL_AUDIT.md` before modernization or production administration.
 
-The multi-repository architecture and revival audit live in `../word-art-frontend/docs/`.
+## Component commands
 
-## Runtime and commands
+- Frontend: from `frontend/`, run `npm ci`, `npm test`, and `npm run build`.
+- API: from `api/`, use Python 3.13, install `requirements-dev.txt` in an
+  isolated environment, and run `python -m pytest`.
+- API package: from `api/`, run `npm ci` and `npm run package` only when Docker
+  and authorized Serverless authentication are available. Packaging is not
+  deployment permission.
+- CLI reference: from `cli-reference/`, run
+  `py -2.7 -m py_compile parse_text.py parse_text_split.py svg.py svg_split.py`.
 
-- The code targets Python 2.7 and uses Python 2 `print` syntax.
-- Pinned libraries in `requirements.txt` are from 2017. Install them only in an isolated legacy environment.
-- Syntax check: `py -2.7 -m py_compile parse_text.py parse_text_split.py svg.py svg_split.py`
-- Historical example: `py -2.7 svg.py -f txt/purple_cow.txt -c purple`
-- Generated files belong in `output/`, which is ignored by Git.
-
-There is no automated test suite. Add focused tests before changing parsing or path-generation behavior.
+Follow the nested `AGENTS.md` before working in a component.
 
 ## Change rules
 
-- Treat `parse_text.py` and `svg.py` as the original simple-rendering pipeline.
-- Treat `parse_text_split.py` and `svg_split.py` as the original highlighted-segment experiment.
-- Do not assume a fix here changes production. Port intentional behavior changes separately to `word-art-serverless` and `word-art-frontend`.
-- Preserve the core visual rule unless a task explicitly changes it: one segment per sentence, segment length equals word count, and SVG direction rotates through left/down/right/up.
+- Keep `frontend/` and `api/` path-local. Do not add a root package workspace,
+  shared virtual environment, root deployment command, or cross-component
+  runtime import.
+- The canonical JSON contract under `contract/` is consumed by tests, not
+  production runtime modules.
+- Coordinate changes to shared request fields, palettes, quality thresholds,
+  parsing examples, or turtle-path behavior across the contract and both active
+  component test suites.
+- Treat `cli-reference/` as read-only unless a task explicitly changes the
+  historical algorithm. Active code must not import, build, or execute it.
 - Keep sample texts as fixtures; do not add copyrighted or private submissions.
-- Do not run upload or deployment actions from this repository.
+
+## Safety
+
+- Never run `frontend/deploy.ps1 -Apply`, `frontend/upload.sh -Apply`,
+  `serverless deploy`, `serverless remove`, a live Lambda invocation, or a
+  successful production generation probe without explicit approval.
+- Tests must not use real AWS. Treat generated objects as user submissions and
+  keep cleanup tooling dry-run-first with recoverable backups.
+- Do not delete superseded source repositories. Redirect or archive operations
+  require explicit approval after canonical clean-clone verification.
 
 ## Verification
 
-For documentation-only changes, check Markdown links and run the Python 2 syntax command above. For behavior changes, add a test covering sentence parsing and the resulting SVG path before modifying production code.
+For cross-component changes, run the affected component suites from their own
+directories. Contract changes require both active suites. Documentation changes
+require local Markdown-link checks and the component command/path audit. Any
+unavailable packaging, credential, or legacy-runtime prerequisite remains an
+unmet gate rather than permission to skip or deploy.
