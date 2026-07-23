@@ -2,14 +2,12 @@
 
 ## Repository role
 
-This repository is the original command-line prototype for the Word Art system. It turns sentence word counts into a repeatedly turning SVG path. It is useful as an algorithm and history reference; it is not called by the deployed web application.
+This directory contains the original command-line prototype for the Word Art
+system. It turns sentence word counts into a repeatedly turning SVG path. It is
+an algorithm and history reference; the active browser and API under
+`../frontend/` and `../api/` do not call it.
 
-Sibling repositories are normally checked out beside this one:
-
-- `../word-art-frontend`: browser UI and client-side preprocessing
-- `../word-art-serverless`: deployed SVG-generation Lambda
-
-The multi-repository architecture and revival audit live in `../word-art-frontend/docs/`.
+The product architecture and revival audit live in `../docs/`.
 
 ## Runtime and commands
 
@@ -25,7 +23,7 @@ There is no automated test suite. Add focused tests before changing parsing or p
 
 - Treat `parse_text.py` and `svg.py` as the original simple-rendering pipeline.
 - Treat `parse_text_split.py` and `svg_split.py` as the original highlighted-segment experiment.
-- Do not assume a fix here changes production. Port intentional behavior changes separately to `word-art-serverless` and `word-art-frontend`.
+- Do not assume a fix here changes production. Port intentional behavior changes separately to `../api/` and `../frontend/`.
 - Preserve the core visual rule unless a task explicitly changes it: one segment per sentence, segment length equals word count, and SVG direction rotates through left/down/right/up.
 - Keep sample texts as fixtures; do not add copyrighted or private submissions.
 - Do not run upload or deployment actions from this repository.

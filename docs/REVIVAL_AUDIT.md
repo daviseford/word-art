@@ -13,9 +13,9 @@ This is a confirmed-state inventory, not a claim that every production path was 
 ## What still works
 
 - The deployed static page at `https://daviseford.com/word-art/` returns HTTP 200 and serves a bundle containing the same SVG and PNG endpoint IDs as this checkout.
-- `word-art-frontend` installs from its lockfile, passes its Mocha tests, builds, and serves the built page with the current local Node runtime.
-- `word-art-serverless` runs on local Python 3.13 and passes 34 tests, including real simple/split SVG serialization through an in-memory fake S3 client, cleanup safety checks, and an IAM configuration check.
-- The original `word-art` CLI still compiles with the locally installed Python 2.7 interpreter.
+- `frontend/` installs from its lockfile, passes its Mocha tests, builds, and serves the built page with the current local Node runtime.
+- `api/` runs on local Python 3.13 and passes 34 tests, including real simple/split SVG serialization through an in-memory fake S3 client, cleanup safety checks, and an IAM configuration check.
+- The original CLI under `cli-reference/` still compiles with the locally installed Python 2.7 interpreter.
 - Both public buckets are readable and listable. Matching SVG and PNG objects were written as recently as 2026-05-16.
 - The PNG API answered an `OPTIONS` request with HTTP 200.
 
@@ -35,7 +35,9 @@ Impact: avoidable AWS spend, unbounded submissions, and enumerable user artifact
 
 ### High: the deployed SVG route mishandled preflight (fixed in production)
 
-An `OPTIONS` request to the configured SVG endpoint returned HTTP 500 during the audit. `serverless.yml` declares `ANY /` while also setting `method: post`, and `handler.endpoint` assumes `event['body']` exists.
+An `OPTIONS` request to the configured SVG endpoint returned HTTP 500 during
+the audit. `api/serverless.yml` declares `ANY /` while also setting
+`method: post`, and `api/handler.endpoint` assumes `event['body']` exists.
 
 The deployed stack now declares an explicit POST event with CORS and handles OPTIONS without touching storage.
 
@@ -63,7 +65,7 @@ The revived handler now lets rendering/storage exceptions reach one HTTP 500 bou
 
 The revived fallback now ignores empty trailing segments and measures words. Substring highlight matching is intentionally unchanged because the frontend currently uses the same rule.
 
-### Medium: optional highlight input disagreed across the repositories (backend fixed in production)
+### Medium: optional highlight input disagreed across components (backend fixed in production)
 
 The frontend labels highlight color as optional and sends `null` when highlight words are present but no color is entered. The first revived validator rejected that request even though the frontend had already used the historical default color. The Lambda now treats a null highlight color as omitted, and the frontend drops blank terms caused by whitespace or trailing commas.
 
@@ -80,7 +82,10 @@ The revived handler requires a usable precomputed path or fallback text, validat
 
 These totals come from installing the committed lockfiles. They mostly affect obsolete build/deployment tooling, but modernization should happen before trusting those tools with production credentials.
 
-The original `npm start` also crashed on Node 25 because Webpack Dev Server 2 calls the removed internal `http_parser` binding. This revival pass replaces that startup path with the dependency-free `serve.js` while retaining Webpack for production builds.
+The original `npm start` also crashed on Node 25 because Webpack Dev Server 2
+calls the removed internal `http_parser` binding. This revival pass replaces
+that startup path with the dependency-free `frontend/serve.js` while retaining
+Webpack for production builds.
 
 ### Medium: SVG uploads had no media type (fixed in production)
 
@@ -88,9 +93,12 @@ The original `npm start` also crashed on Node 25 because Webpack Dev Server 2 ca
 
 New uploads from the revived code use `image/svg+xml`; existing production objects retain their current metadata until migrated or replaced.
 
-### Low: request construction depended on DOM order (fixed locally)
+### Low: request construction depended on DOM order (fixed in source)
 
-`src/form.js` previously indexed `serializeArray()` positions. The local frontend now selects each field by ID, so reordering or adding form controls cannot silently remap request values. This frontend change has not been uploaded yet.
+`frontend/src/form.js` previously indexed `serializeArray()` positions. The
+current frontend selects each field by ID, so reordering or adding form
+controls cannot silently remap request values. This frontend change has not
+been uploaded by the consolidation work.
 
 ### Low: submissions were logged (fixed in production)
 
@@ -98,15 +106,22 @@ The revived handler logs operation names/checksums and exception traces without 
 
 ## Open security questions
 
-- `src/components.js` embeds a CanvasPop `access_key` in the public bundle and URL. Confirm whether it is intentionally public; rotate or remove it if it grants privileged access.
+- `frontend/src/components.js` embeds a CanvasPop `access_key` in the public
+  bundle and URL. Confirm whether it is intentionally public; rotate or remove
+  it if it grants privileged access.
 - The PNG API accepts a caller-supplied `url`, but its source is missing. Recover or replace that service and verify that it cannot fetch private-network or arbitrary remote URLs before relying on it.
 
 ## Test gaps
 
-- The CLI has no tests.
-- The Lambda now has handler, parsing, storage, cleanup, malformed-path, cross-repository optional-highlight, and real-render contract tests through fake S3. Production has two non-writing under-threshold smoke probes but no separate staging stack or successful end-to-end generation smoke test.
+- The CLI reference has no tests.
+- The Lambda now has handler, parsing, storage, cleanup, malformed-path,
+  cross-component optional-highlight, and real-render contract tests through
+  fake S3. Production has two non-writing under-threshold smoke probes but no
+  separate staging stack or successful end-to-end generation smoke test.
 - Frontend tests cover text utilities, the 20-sentence boundary, palette validity, and the local static server, but not form request construction, API orchestration, error rendering, checksum collisions, duplicate-without-PNG behavior, or exact highlight matching.
-- No repository owns an end-to-end contract test across the frontend request and Lambda handler.
+- No test currently spans the frontend request and Lambda handler. The
+  consolidation assigns shared examples to a canonical contract plus
+  component parity suites without adding a runtime dependency.
 - The PNG service has no source or contract tests in the known checkout set.
 
 ## Recommended revival order
@@ -121,11 +136,11 @@ The revived handler logs operation names/checksums and exception traces without 
 ## Baseline commands and results
 
 ```text
-word-art:
+cli-reference/:
   py -2.7 -m py_compile parse_text.py parse_text_split.py svg.py svg_split.py
   PASS (dependencies not installed)
 
-word-art-frontend:
+frontend/:
   npm ci
   PASS, with legacy/deprecation warnings
   npm test
@@ -135,7 +150,7 @@ word-art-frontend:
   npm start
   PASS after replacing the incompatible Webpack Dev Server 2 startup
 
-word-art-serverless:
+api/:
   .venv\Scripts\python.exe -m pytest
   PASS (34 tests on Python 3.13.3; fake S3, no AWS access)
   python -m pip check

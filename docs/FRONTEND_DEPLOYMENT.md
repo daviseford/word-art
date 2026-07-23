@@ -1,8 +1,11 @@
 # Frontend deployment
 
-The Word Art frontend is a static site. Deployment builds `dist/`, synchronizes it to the `word-art/` prefix of the `daviseford.com` S3 bucket, invalidates the matching CloudFront path, and checks the public page and assets.
+The Word Art frontend is a path-local static project under `frontend/`.
+Deployment builds `dist/`, synchronizes it to the `word-art/` prefix of the
+`daviseford.com` S3 bucket, invalidates the matching CloudFront path, and
+checks the public page and assets.
 
-Merging to GitHub does not deploy this repository automatically.
+Merging to GitHub does not deploy the frontend automatically.
 
 ## Production targets
 
@@ -15,7 +18,8 @@ Merging to GitHub does not deploy this repository automatically.
 
 ## Prerequisites
 
-- Run from Windows PowerShell in this repository.
+- Run from Windows PowerShell in the consolidated repository's `frontend/`
+  directory.
 - Install Node.js, npm, and AWS CLI v2.
 - Authenticate AWS CLI with an identity that can synchronize the Word Art S3 prefix and invalidate the listed CloudFront distribution.
 - Start from the commit intended for production with a reviewed working tree.
@@ -31,7 +35,7 @@ aws sts get-caller-identity
 The default mode is non-production:
 
 ```powershell
-cd D:\Projects\word-art-frontend
+cd frontend
 .\deploy.ps1
 ```
 
@@ -110,11 +114,11 @@ Do not submit a production generation probe solely for deployment verification; 
 
 ## Rollback
 
-Redeploy a known-good frontend commit from a temporary worktree:
+Redeploy a known-good canonical commit from a temporary worktree:
 
 ```powershell
-git worktree add ..\word-art-frontend-rollback <known-good-commit>
-cd ..\word-art-frontend-rollback
+git worktree add ..\word-art-rollback <known-good-commit>
+cd ..\word-art-rollback\frontend
 .\deploy.ps1
 .\deploy.ps1 -Apply
 ```
@@ -122,5 +126,5 @@ cd ..\word-art-frontend-rollback
 Review the rollback dry run before applying it. After verification, return to the main checkout and remove the temporary worktree:
 
 ```powershell
-git worktree remove ..\word-art-frontend-rollback
+git worktree remove ..\word-art-rollback
 ```

@@ -12,15 +12,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/daviseford/word-art-frontend.git"
+    "url": "git+https://github.com/daviseford/word-art.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/daviseford/word-art-frontend/issues"
+    "url": "https://github.com/daviseford/word-art/issues"
   },
-  "homepage": "https://github.com/daviseford/word-art-frontend#readme",
+  "homepage": "https://github.com/daviseford/word-art/tree/master/frontend#readme",
   "devDependencies": {
     "@babel/core": "^7.0.0-beta.40",
     "@babel/preset-env": "^7.0.0-beta.40",

@@ -2,13 +2,13 @@
 
 The AWS Lambda/API Gateway backend for Word Art SVG generation. It validates the browser request, renders SVG XML, deduplicates by exact object key, and stores the result in the public `word-art-svgs` bucket.
 
-## Repository family
+This path-local project is the SVG backend in the canonical
+[`word-art`](https://github.com/daviseford/word-art) repository. The browser
+client is in [`../frontend/`](../frontend/), and the original algorithm
+reference is in [`../cli-reference/`](../cli-reference/).
 
-- [`word-art`](https://github.com/daviseford/word-art): original CLI prototype
-- [`word-art-frontend`](https://github.com/daviseford/word-art-frontend): browser client and cross-repository architecture docs
-- [`word-art-serverless`](https://github.com/daviseford/word-art-serverless): this SVG backend
-
-Read the frontend repository's `docs/SYSTEM_ARCHITECTURE.md` before changing request fields, checksums, result URLs, or storage behavior.
+Read [the system architecture](../docs/SYSTEM_ARCHITECTURE.md) before changing
+request fields, checksums, result URLs, or storage behavior.
 
 ## Local setup
 
@@ -72,4 +72,4 @@ S3 versioning is disabled on both buckets, so never apply without a recoverable 
 - The route remains public and the browser-supplied checksum is collision-prone. Exact lookup fixes prefix collisions but does not make the checksum trustworthy.
 - Public-read uploads and public bucket listing are inherited production behavior, not a recommended new design.
 - The deployment artifact is close enough to Lambda's unpacked size limit that dependency changes must be followed by artifact-size inspection.
-- The separate PNG service is not present in the three known repositories.
+- The separate PNG service is not present in this repository.

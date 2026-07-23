@@ -2,14 +2,14 @@
 
 ## Repository role
 
-This repository implements the deployed SVG-generation API. It receives normalized text or precomputed path data, renders SVG XML, deduplicates by exact S3 object key, and writes public objects to the `word-art-svgs` bucket.
+This path-local project implements the deployed SVG-generation API. It
+receives normalized text or precomputed path data from `../frontend/`, renders
+SVG XML, deduplicates by exact S3 object key, and writes public objects to the
+`word-art-svgs` bucket. The original algorithm reference is in
+`../cli-reference/`.
 
-Sibling repositories are normally checked out beside this one:
-
-- `../word-art`: original Python CLI prototype
-- `../word-art-frontend`: static client and the authoritative cross-repository docs in `docs/`
-
-Read `../word-art-frontend/docs/SYSTEM_ARCHITECTURE.md` before changing the request/response contract, checksum handling, public URL shape, or storage behavior.
+Read `../docs/SYSTEM_ARCHITECTURE.md` before changing the request/response
+contract, checksum handling, public URL shape, or storage behavior.
 
 ## Runtime and commands
 
@@ -36,7 +36,9 @@ Serverless Framework v4 provides Python requirement packaging directly. Do not r
 - `serverless.yml`: AWS runtime, API Gateway event, IAM, and packaging
 - `tests/`: handler/storage/rendering contract tests using fake S3 only
 
-Keep the frontend-precomputed `simple_path` and `split_pre_parsed` paths compatible. If a contract field changes, update both repositories' tests and the frontend architecture document together.
+Keep the frontend-precomputed `simple_path` and `split_pre_parsed` paths
+compatible. If a contract field changes, update `../contract/`, both active
+component test suites, and `../docs/SYSTEM_ARCHITECTURE.md` together.
 
 ## Safety
 

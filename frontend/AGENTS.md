@@ -2,14 +2,14 @@
 
 ## Repository role
 
-This is the static browser client for Word Art. It normalizes text, computes sentence lengths and SVG path data, posts a generation request to the SVG Lambda, and then asks a separate PNG service to rasterize the result.
+This is the path-local static browser client for Word Art. It normalizes text,
+computes sentence lengths and SVG path data, posts a generation request to the
+SVG Lambda in `../api/`, and then asks a separate PNG service to rasterize the
+result. The original algorithm reference is in `../cli-reference/`.
 
-Sibling repositories are normally checked out beside this one:
-
-- `../word-art`: original Python command-line prototype
-- `../word-art-serverless`: SVG Lambda and S3 persistence
-
-Read `docs/SYSTEM_ARCHITECTURE.md` before changing request fields, checksums, result URLs, or storage behavior. Read `docs/REVIVAL_AUDIT.md` before modernization or admin work.
+Read `../docs/SYSTEM_ARCHITECTURE.md` before changing request fields, checksums,
+result URLs, or storage behavior. Read `../docs/REVIVAL_AUDIT.md` before
+modernization or admin work.
 
 ## Runtime and commands
 
@@ -41,12 +41,15 @@ The build works with the current local Node runtime but uses an obsolete Webpack
 
 Edit `src/`, test, then rebuild `dist/` when a source change is intended for deployment.
 
-## Cross-repository contract
+## Cross-component contract
 
-- The SVG request is consumed by `../word-art-serverless/handler.py`.
+- The SVG request is consumed by `../api/handler.py`.
 - The frontend's `simple_path`, `split_pre_parsed`, `checksum`, colors, and split fields are part of a shared wire contract.
-- The PNG endpoint and its source are not present in these three repositories. Do not invent its behavior; preserve the observed `{ url, bg_color }` request and `svg_url` response until its implementation is found or replaced.
-- If a contract field changes, update the serverless handler, tests, and `docs/SYSTEM_ARCHITECTURE.md` together.
+- The PNG endpoint and its source are not present in this repository. Do not
+  invent its behavior; preserve the observed `{ url, bg_color }` request and
+  `svg_url` response until its implementation is found or replaced.
+- If a contract field changes, update `../contract/`, the API handler and tests,
+  the frontend tests, and `../docs/SYSTEM_ARCHITECTURE.md` together.
 
 ## Safety
 

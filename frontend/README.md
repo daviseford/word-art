@@ -2,14 +2,15 @@
 
 The static browser client for the Word Art generator. It preprocesses text, submits SVG-generation requests, starts PNG conversion, and displays public S3 results.
 
-## Repository family
+This path-local project is the browser component of the canonical
+[`word-art`](https://github.com/daviseford/word-art) repository. The SVG API is
+in [`../api/`](../api/), and the original algorithm reference is in
+[`../cli-reference/`](../cli-reference/). The public gallery remains in the
+separate `daviseford-landing-page` repository.
 
-- [`word-art`](https://github.com/daviseford/word-art): original Python CLI prototype
-- [`word-art-frontend`](https://github.com/daviseford/word-art-frontend): this browser client
-- [`word-art-serverless`](https://github.com/daviseford/word-art-serverless): SVG-generation Lambda
-- `../daviseford-landing-page`: public gallery page and its paginated S3 browser
-
-Start with [the system architecture](docs/SYSTEM_ARCHITECTURE.md), then read [the revival audit](docs/REVIVAL_AUDIT.md) before modernization or admin work.
+Start with [the system architecture](../docs/SYSTEM_ARCHITECTURE.md), then read
+[the revival audit](../docs/REVIVAL_AUDIT.md) before modernization or admin
+work.
 
 ## Local development
 
@@ -42,8 +43,12 @@ The canonical deployment command is a safe-by-default PowerShell script:
 
 Production deployment requires explicit approval and correctly scoped AWS credentials. The compatibility wrapper `bash ./upload.sh` delegates to the same PowerShell script and accepts `-Apply`.
 
-Read the [frontend deployment runbook](docs/FRONTEND_DEPLOYMENT.md) for prerequisites, exact behavior, manual recovery commands, verification, and rollback.
+Read the [frontend deployment runbook](../docs/FRONTEND_DEPLOYMENT.md) for
+prerequisites, exact behavior, manual recovery commands, verification, and
+rollback.
 
 ## Known boundary
 
-The SVG API source is in `word-art-serverless`. The configured PNG endpoint is a separate deployed service whose source is not present in the known repositories. The gallery source is `../daviseford-landing-page/pages/word-art-gallery.html`, not this checkout.
+The SVG API source is in `../api/`. The configured PNG endpoint is a separate
+deployed service whose source is not present in this repository. The gallery is
+owned by `daviseford-landing-page`, not this checkout.

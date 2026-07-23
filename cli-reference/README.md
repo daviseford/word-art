@@ -1,12 +1,9 @@
-# Word Art CLI
+# Word Art CLI reference
 
-The original Word Art prototype turns each sentence into a line segment whose length is the sentence's word count, rotating 90 degrees after every segment. This repository is now an algorithm/history reference; the deployed web flow lives in the sibling frontend and serverless repositories.
-
-## Repository family
-
-- [`word-art`](https://github.com/daviseford/word-art): this Python CLI prototype
-- [`word-art-frontend`](https://github.com/daviseford/word-art-frontend): static browser client and system documentation
-- [`word-art-serverless`](https://github.com/daviseford/word-art-serverless): deployed SVG-generation Lambda
+The original Word Art prototype turns each sentence into a line segment whose
+length is the sentence's word count, rotating 90 degrees after every segment.
+This directory is an algorithm and history reference; the deployed browser and
+API live in [`../frontend/`](../frontend/) and [`../api/`](../api/).
 
 ## Legacy runtime
 
@@ -28,4 +25,6 @@ There is no automated test suite. A dependency-free syntax check is available:
 py -2.7 -m py_compile parse_text.py parse_text_split.py svg.py svg_split.py
 ```
 
-See the frontend repository's `docs/SYSTEM_ARCHITECTURE.md` and `docs/REVIVAL_AUDIT.md` for the multi-repository map, current status, and known defects.
+See [the system architecture](../docs/SYSTEM_ARCHITECTURE.md) and
+[the revival audit](../docs/REVIVAL_AUDIT.md) for the current product map,
+status, and known defects.

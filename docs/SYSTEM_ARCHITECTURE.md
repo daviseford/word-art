@@ -2,29 +2,32 @@
 
 Last verified locally: 2026-07-23
 
-## Repository map
+## Component and external-system map
 
-| Repository | Role | Called in production? |
+| Path or system | Role | Called in production? |
 | --- | --- | --- |
-| [`word-art`](https://github.com/daviseford/word-art) | Original Python 2 CLI and source of the sentence-to-path idea | No |
-| [`word-art-frontend`](https://github.com/daviseford/word-art-frontend) | Static browser UI, text normalization, request construction, and result display | Yes |
-| [`word-art-serverless`](https://github.com/daviseford/word-art-serverless) | Python 3.13 Lambda source that validates requests, renders SVG, and stores it in S3 | Yes |
-| `daviseford-landing-page` | Public Word Art gallery page and paginated S3 browser | Yes |
-| Unknown PNG service | Fetches an SVG and creates the paired PNG | Yes, but its source is not in these repositories |
+| [`frontend/`](../frontend/) | Static browser UI, text normalization, request construction, and result display | Yes |
+| [`api/`](../api/) | Python 3.13 Lambda source that validates requests, renders SVG, and stores it in S3 | Yes |
+| [`cli-reference/`](../cli-reference/) | Original Python 2 CLI and source of the sentence-to-path idea | No |
+| `daviseford-landing-page` | External public Word Art gallery and paginated S3 browser | Yes |
+| Unknown PNG service | Fetches an SVG and creates the paired PNG | Yes, but its source is not in this repository |
 
-The original CLI is an ancestor, not a runtime dependency. The frontend and serverless repositories duplicated and then evolved parts of its parsing and path-generation logic.
+The original CLI is an ancestor, not a runtime dependency. The frontend and
+API components duplicated and then evolved parts of its parsing and
+path-generation logic. Their implementations stay independent, while
+`contract/word-art-contract.json` is the test authority for shared behavior.
 
 ## Request and storage flow
 
 ```text
-Browser (`word-art-frontend`)
+Browser (`frontend/`)
   1. Normalize text and count words per sentence.
   2. Build `simple_path` or `split_pre_parsed`.
   3. Require at least 20 distinct normalized sentences.
   4. Compute a client-side numeric checksum and POST the JSON request.
                   |
                   v
-SVG Lambda (`word-art-serverless`)
+SVG Lambda (`api/`)
   5. Reject fewer than 20 rendered path segments, then look for `<checksum>.svg`.
   6. Render SVG when no duplicate is found.
   7. PUT `<checksum>.svg` in `word-art-svgs` as public-read.
@@ -41,7 +44,7 @@ Unknown PNG service
 Browser displays public SVG and PNG URLs.
 ```
 
-Deployed values currently live in `src/config.js`:
+Deployed values currently live in `frontend/src/config.js`:
 
 - SVG API: `https://gy2aa8c57c.execute-api.us-east-1.amazonaws.com/dev/`
 - PNG API: `https://x9m83oo0kd.execute-api.us-east-1.amazonaws.com/dev/`
@@ -76,7 +79,9 @@ The deployed Lambda validates the body and returns HTTP 400 for malformed, incom
 
 ## Persistence model
 
-There is no database or submission record in these repositories. S3 object keys are the only durable identity, and SVG/PNG pairs are associated by filename stem.
+There is no database or submission record in this repository. S3 object keys
+are the only durable identity, and SVG/PNG pairs are associated by filename
+stem.
 
 Production cleanup has run in two backed-up passes. On 2026-07-22, the first pass removed every SVG below 12 parsed path segments plus same-stem PNGs: 668 SVGs and 437 PNGs. On 2026-07-23, after the quality boundary increased to 20, the second pass removed another 96 SVGs and 60 PNGs with 12–19 segments. Every target was copied locally with byte counts and SHA-256 hashes before deletion. The current verified inventory is:
 
@@ -85,7 +90,12 @@ Production cleanup has run in two backed-up passes. On 2026-07-22, the first pas
 | `word-art-svgs` | 427 | — | 2026-05-16 |
 | `word-art-pngs` | 288 | — | 2026-05-16 |
 
-The cleanup classifier parses every SVG path. The first pass matched all user-labeled bad examples and preserved all seven labeled-good examples. The 20-segment pass intentionally removed the labeled-good 13-segment `306269757` pair while preserving the other six. A post-delete scan found zero remaining SVGs below 20 segments. Recovery bundles are outside the repositories at `D:\Projects\word-art-backups\low-quality-under-12-2026-07-22` and `D:\Projects\word-art-backups\low-quality-under-20-2026-07-23`.
+The cleanup classifier parses every SVG path. The first pass matched all
+user-labeled bad examples and preserved all seven labeled-good examples. The
+20-segment pass intentionally removed the labeled-good 13-segment `306269757`
+pair while preserving the other six. A post-delete scan found zero remaining
+SVGs below 20 segments. Recovery bundles remain outside the repository in the
+maintainer's dated backup directories.
 
 The gallery page lives in `daviseford-landing-page`, fetches the public S3 XML inventory without the legacy AWS SDK/Cognito dependency, sorts it newest-first, and renders only 12 images per page. Gallery images are constrained to their media viewport with `object-fit: contain`.
 
@@ -107,4 +117,6 @@ Do not expose AWS credentials or delete permissions to the public frontend. Befo
 
 The existing `word-art-serverless-dev` stack was updated in place. Production now runs Python 3.13 as Lambda version 119 at the original API Gateway URL, with 1,024 MB memory, a 29-second timeout, exact-key lookup, request validation, correct SVG media types, narrower IAM, and explicit POST/CORS configuration. A live 19-segment probe returned the documented 400 message and created no S3 object.
 
-The generator and gallery redesigns are local and uncommitted. Their production upload scripts have not been run.
+The current generator redesign is preserved in `frontend/` through source
+commit `d795a4a`; this consolidation does not upload it. The gallery remains an
+external consumer owned by `daviseford-landing-page`.
