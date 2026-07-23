@@ -12,7 +12,7 @@ API, and the original command-line prototype.
 | [`api/`](api/) | Python 3.13 Lambda that validates requests, renders SVG, and stores it in S3 | Yes |
 | [`cli-reference/`](cli-reference/) | Original Python 2 algorithm and history reference | No |
 | [`docs/`](docs/) | Product architecture, revival findings, deployment guidance, and plans | Documentation |
-| `contract/` | Test-enforced frontend/API behavior contract | Test authority only |
+| [`contract/word-art-contract.json`](contract/word-art-contract.json) | Test-enforced frontend/API behavior contract | Test authority only |
 
 Start with [the system architecture](docs/SYSTEM_ARCHITECTURE.md), then read
 [the revival audit](docs/REVIVAL_AUDIT.md) before modernization, production

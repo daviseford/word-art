@@ -14,7 +14,9 @@ This is a confirmed-state inventory, not a claim that every production path was 
 
 - The deployed static page at `https://daviseford.com/word-art/` returns HTTP 200 and serves a bundle containing the same SVG and PNG endpoint IDs as this checkout.
 - `frontend/` installs from its lockfile, passes its Mocha tests, builds, and serves the built page with the current local Node runtime.
-- `api/` runs on local Python 3.13 and passes 34 tests, including real simple/split SVG serialization through an in-memory fake S3 client, cleanup safety checks, and an IAM configuration check.
+- `api/` runs on local Python 3.13 and passes 42 tests, including contract
+  parity, real simple/split SVG serialization through an in-memory fake S3
+  client, cleanup safety checks, and an IAM configuration check.
 - The original CLI under `cli-reference/` still compiles with the locally installed Python 2.7 interpreter.
 - Both public buckets are readable and listable. Matching SVG and PNG objects were written as recently as 2026-05-16.
 - The PNG API answered an `OPTIONS` request with HTTP 200.
@@ -119,9 +121,10 @@ The revived handler logs operation names/checksums and exception traces without 
   fake S3. Production has two non-writing under-threshold smoke probes but no
   separate staging stack or successful end-to-end generation smoke test.
 - Frontend tests cover text utilities, the 20-sentence boundary, palette validity, and the local static server, but not form request construction, API orchestration, error rendering, checksum collisions, duplicate-without-PNG behavior, or exact highlight matching.
-- No test currently spans the frontend request and Lambda handler. The
-  consolidation assigns shared examples to a canonical contract plus
-  component parity suites without adding a runtime dependency.
+- No single test invokes the frontend and Lambda together. The
+  [canonical contract](../contract/word-art-contract.json) now supplies shared
+  parsing, quality, palette, request-default, and turtle-path examples that
+  both component suites enforce without adding a runtime dependency.
 - The PNG service has no source or contract tests in the known checkout set.
 
 ## Recommended revival order
@@ -152,7 +155,7 @@ frontend/:
 
 api/:
   .venv\Scripts\python.exe -m pytest
-  PASS (34 tests on Python 3.13.3; fake S3, no AWS access)
+  PASS (42 tests on Python 3.13.3; fake S3, no AWS access)
   python -m pip check
   PASS
   npm ci

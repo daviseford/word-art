@@ -14,8 +14,9 @@ Last verified locally: 2026-07-23
 
 The original CLI is an ancestor, not a runtime dependency. The frontend and
 API components duplicated and then evolved parts of its parsing and
-path-generation logic. Their implementations stay independent, while
-`contract/word-art-contract.json` is the test authority for shared behavior.
+path-generation logic. Their implementations stay independent, while the
+[canonical contract](../contract/word-art-contract.json) is the test authority
+for shared behavior.
 
 ## Request and storage flow
 
