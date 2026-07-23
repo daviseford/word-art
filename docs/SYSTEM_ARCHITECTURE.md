@@ -119,5 +119,7 @@ Do not expose AWS credentials or delete permissions to the public frontend. Befo
 The existing `word-art-serverless-dev` stack was updated in place. Production now runs Python 3.13 as Lambda version 119 at the original API Gateway URL, with 1,024 MB memory, a 29-second timeout, exact-key lookup, request validation, correct SVG media types, narrower IAM, and explicit POST/CORS configuration. A live 19-segment probe returned the documented 400 message and created no S3 object.
 
 The current generator redesign is preserved in `frontend/` through source
-commit `d795a4a`; this consolidation does not upload it. The gallery remains an
-external consumer owned by `daviseford-landing-page`.
+commit `d795a4a`. On 2026-07-23, the public S3 and CloudFront copies of
+`index.html`, `app.bundle.js`, and `app.css` were verified byte-for-byte
+against that canonical build, so no redundant upload was applied. The gallery
+remains an external consumer owned by `daviseford-landing-page`.

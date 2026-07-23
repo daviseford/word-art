@@ -20,7 +20,7 @@ Merging to GitHub does not deploy the frontend automatically.
 
 - Run from Windows PowerShell in the consolidated repository's `frontend/`
   directory.
-- Install Node.js, npm, and AWS CLI v2.
+- Install Node.js 24.11 or newer, npm, and AWS CLI v2.
 - Authenticate AWS CLI with an identity that can synchronize the Word Art S3 prefix and invalidate the listed CloudFront distribution.
 - Start from the commit intended for production with a reviewed working tree.
 

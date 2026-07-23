@@ -2,8 +2,8 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const webpack = require('webpack');
 
 const collectFiles = (directory) => fs.readdirSync(directory).reduce((files, entry) => {
@@ -26,46 +26,49 @@ const getAssetVersion = () => {
   return hash.digest('hex').slice(0, 12);
 };
 
-class CopyAppCssPlugin {
-  apply(compiler) {
-    compiler.plugin('emit', (compilation, callback) => {
-      const css = fs.readFileSync(path.resolve(__dirname, 'src/app.css'));
-      compilation.assets['app.css'] = {
-        source: () => css,
-        size: () => css.length,
-      };
-      callback();
-    });
-  }
-}
-
 module.exports = {
+  mode: 'production',
   entry: {
     app: './src/word-art.js'
   },
   output: {
     filename: '[name].bundle.js',
-    path: path.resolve(__dirname, 'dist')
+    path: path.resolve(__dirname, 'dist'),
+    clean: true
   },
-  devServer: {
-    contentBase: './dist'
+  optimization: {
+    minimizer: [
+      new TerserPlugin({
+        extractComments: false,
+        terserOptions: {
+          format: {
+            comments: false,
+          },
+        },
+      }),
+    ],
   },
   plugins: [
     new webpack.ProvidePlugin({
-      $: 'jquery',
-      jQuery: 'jquery',
-      'window.jQuery': 'jquery',
-      'window.$': 'jquery'
+      $: ['jquery', 'default'],
+      jQuery: ['jquery', 'default'],
+      'window.jQuery': ['jquery', 'default'],
+      'window.$': ['jquery', 'default']
     }),
-    new CleanWebpackPlugin(['dist']),
-    new CopyAppCssPlugin(),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'src/app.css'),
+          to: 'app.css',
+        },
+      ],
+    }),
     new HtmlWebpackPlugin({
       title: 'Word Art Generator',
       template: './src/index.html',
       inject: false,
       assetVersion: getAssetVersion(),
-    }),
-    new UglifyJSPlugin()
+    })
   ],
   module: {
     rules: [

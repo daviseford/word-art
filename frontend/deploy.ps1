@@ -11,6 +11,7 @@ $DistributionId = 'EOV559H6J3O6V'
 $InvalidationPath = '/word-art/*'
 $SiteUrl = 'https://daviseford.com/word-art/'
 $DistPath = Join-Path $PSScriptRoot 'dist'
+$ExpectedArtifacts = @('app.bundle.js', 'app.css', 'index.html')
 $verificationFiles = @()
 
 function Assert-Command {
@@ -50,11 +51,26 @@ try {
   Write-Host 'Building dist/...'
   Invoke-External npm @('run', 'build')
 
-  foreach ($artifact in @('index.html', 'app.bundle.js', 'app.css')) {
+  foreach ($artifact in $ExpectedArtifacts) {
     $artifactPath = Join-Path $DistPath $artifact
     if (-not (Test-Path -LiteralPath $artifactPath -PathType Leaf)) {
       throw "Build artifact is missing: $artifactPath"
     }
+  }
+
+  $emittedArtifacts = @(
+    Get-ChildItem -LiteralPath $DistPath -File -Recurse |
+      ForEach-Object {
+        $_.FullName.Substring($DistPath.Length + 1).Replace('\', '/')
+      } |
+      Sort-Object
+  )
+  $artifactDifference = Compare-Object `
+    ($ExpectedArtifacts | Sort-Object) `
+    $emittedArtifacts `
+    -CaseSensitive
+  if ($artifactDifference) {
+    throw "Build output differs from the deployment allowlist: $($emittedArtifacts -join ', ')"
   }
 
   $syncArguments = @('s3', 'sync', $DistPath, $SiteS3, '--delete')
@@ -99,7 +115,7 @@ try {
   )
 
   Write-Host 'Checking deployed asset hashes...'
-  foreach ($artifact in @('index.html', 'app.bundle.js', 'app.css')) {
+  foreach ($artifact in $ExpectedArtifacts) {
     $url = if ($artifact -eq 'index.html') { $SiteUrl } else { "${SiteUrl}${artifact}" }
     $download = New-TemporaryFile
     $verificationFiles += $download.FullName

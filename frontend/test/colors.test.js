@@ -1,4 +1,3 @@
-const expect = require('chai').expect;
 const Colors = require('../src/colors');
 const Util = require('../src/util');
 
