@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const childProcess = require('child_process');
-const expect = require('chai').expect;
 
 
 describe('frontend deployment scripts', function () {
@@ -13,6 +12,9 @@ describe('frontend deployment scripts', function () {
     expect(deployScript).to.contain('[switch]$Apply');
     expect(deployScript).to.contain("'--dryrun'");
     expect(deployScript).to.not.contain('--size-only');
+    expect(deployScript).to.contain('$ExpectedArtifacts');
+    expect(deployScript).to.contain('Compare-Object');
+    expect(deployScript).to.contain('-CaseSensitive');
   });
 
   it('verifies the app before uploading and waits for CloudFront', function () {

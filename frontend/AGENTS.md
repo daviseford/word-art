@@ -19,7 +19,8 @@ modernization or admin work.
 - Local server: `npm start` (builds once, then serves `dist/` on `http://127.0.0.1:8080`)
 - Alternate port: set `WORD_ART_PORT` before running `npm start`
 
-The build works with the current local Node runtime but uses an obsolete Webpack 3/Babel toolchain. Dependency modernization should be isolated from product changes.
+Use Node.js 24.11 or newer. The build uses Webpack 5 and Babel 8; keep future
+dependency changes isolated from product behavior changes.
 
 ## Source boundaries
 

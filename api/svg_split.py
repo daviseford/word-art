@@ -67,26 +67,27 @@ def plot_lengths(a):
     # Turn left 90 degrees each time
     behavior_ref = ['h -', 'v ', 'h ', 'v -']
     path_store = []
-    path_str = 'M50 20j'
+    path_parts = ['M50 20j']
     count = 0
     color = a[0].get('color', 'black')
     for obj in a:
 
         if obj['color'] != color:
             # print 'Changed colors from %s to %s' % (color, obj['color'])
+            path_str = ' '.join(path_parts)
             last_point = fix_coordinate(str(parse_path(path_str).point(1.0)))
             new_path_start = 'M%s' % strip_parens(last_point)
             res = {'color': color, 'path': parse_path(path_str)}
             path_store.append(res)  # Add the Path to the line_store
-            path_str = new_path_start  # Start the new path
+            path_parts = [new_path_start]  # Start the new path
             color = obj['color']  # With the new color
 
         move = behavior_ref[count] + str(obj['length'])
-        path_str = ' '.join([path_str, move])
+        path_parts.append(move)
         count = 0 if count == 3 else count + 1
 
     # Add the last entry
-    path_store.append({'color': color, 'path': parse_path(path_str)})
+    path_store.append({'color': color, 'path': parse_path(' '.join(path_parts))})
     return path_store
 
 

@@ -158,6 +158,21 @@ def test_simple_and_color_split_turtle_examples_match_contract():
         assert actual["direction"] == expected_vectors[index % len(expected_vectors)]
 
 
+def test_color_split_path_groups_preserve_exact_geometry():
+    segments = CONTRACT["turtle_path"]["split_example"]["segments"]
+
+    assert [
+        (group["color"], group["path"].d())
+        for group in plot_split_lengths(segments)
+    ] == [
+        ("#112233", "M 50.0,20.0 L 48.0,20.0"),
+        ("#FF0000", "M 48.0,20.0 L 48.0,22.0"),
+        ("#112233", "M 48.0,22.0 L 50.0,22.0"),
+        ("#FF0000", "M 50.0,22.0 L 50.0,20.0"),
+        ("#112233", "M 50.0,20.0 L 48.0,20.0"),
+    ]
+
+
 def test_external_boundaries_are_documentation_only():
     png = CONTRACT["external_boundaries"]["png_conversion"]
     gallery = CONTRACT["external_boundaries"]["gallery"]

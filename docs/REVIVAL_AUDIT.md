@@ -10,6 +10,11 @@ The public data set was classified twice by parsed SVG segment count. The first 
 
 This is a confirmed-state inventory, not a claim that every production path was invoked. One deliberate under-threshold production POST verified the live 400 quality gate and created no S3 object; no successful generation probe was sent because that path creates a public object and incurs AWS cost.
 
+On 2026-07-23, the public S3 and CloudFront copies of the three frontend
+artifacts were verified byte-for-byte against the canonical `d795a4a` build.
+Because production already matched, no redundant upload or invalidation was
+applied.
+
 ## What still works
 
 - The deployed static page at `https://daviseford.com/word-art/` returns HTTP 200 and serves a bundle containing the same SVG and PNG endpoint IDs as this checkout.
@@ -77,12 +82,15 @@ The frontend labels highlight color as optional and sends `null` when highlight 
 
 The revived handler requires a usable precomputed path or fallback text, validates nested shapes/colors/checksums, limits the body to 1 MB, and returns actionable HTTP 400 errors.
 
-### Medium: dependency audit is severely red
+### Medium: dependency audit was severely red (fixed in source)
 
 - Frontend clean install after removing the incompatible Webpack Dev Server 2 dependency and repairing the lockfile: 85 advisories (3 low, 42 moderate, 31 high, 9 critical).
 - Serverless JavaScript tooling after replacing the archived plugin with Serverless Framework 4.40.0: 0 advisories.
 
-These totals come from installing the committed lockfiles. They mostly affect obsolete build/deployment tooling, but modernization should happen before trusting those tools with production credentials.
+The frontend source now uses Node.js 24.11+, Webpack 5, Babel 8, Mocha 11,
+and jQuery 4. Its regenerated lockfile reports 0 advisories. Mocha's safe
+transitive `diff`, `glob`, and `serialize-javascript` releases are pinned with
+npm overrides until an equivalent stable Mocha release carries them directly.
 
 The original `npm start` also crashed on Node 25 because Webpack Dev Server 2
 calls the removed internal `http_parser` binding. This revival pass replaces
@@ -145,13 +153,13 @@ cli-reference/:
 
 frontend/:
   npm ci
-  PASS, with legacy/deprecation warnings
+  PASS, 0 advisories with the modernized lockfile
   npm test
-  PASS
+  PASS (43 tests)
   npm run build
-  PASS
+  PASS (Webpack 5 / Babel 8)
   npm start
-  PASS after replacing the incompatible Webpack Dev Server 2 startup
+  PASS with the dependency-free local server
 
 api/:
   .venv\Scripts\python.exe -m pytest

@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const expect = require('chai').expect;
 
 const Colors = require('../src/colors');
 const Config = require('../src/config');
