@@ -21,14 +21,14 @@ def get_sentence_lengths(input_text):
 def plot_lengths(array_of_ints):
     # Turn left 90 degrees each time
     behavior_ref = ['h -', 'v ', 'h ', 'v -']
-    path_str = 'M50 20j'
+    path_parts = ['M50 20j']
     count = 0
     for num in array_of_ints:
         move = '%s%s' % (behavior_ref[count], num)
-        path_str = ' '.join([path_str, move])
+        path_parts.append(move)
         count = 0 if count == 3 else count + 1
 
-    return path_str
+    return ' '.join(path_parts)
 
 
 def get_simple_preparsed_paths(simple_path):
