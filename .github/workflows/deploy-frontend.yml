@@ -1,0 +1,120 @@
+name: Deploy Word Art frontend
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "contract/**"
+      - ".github/workflows/deploy-frontend.yml"
+      - "infra/github-actions-deploy-roles.yml"
+  push:
+    branches: [master]
+    paths:
+      - "frontend/src/**"
+      - "frontend/dist/**"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - "frontend/webpack.config.js"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview the S3 sync without uploads or invalidation."
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEPLOY_REQUESTED: ${{ github.ref == 'refs/heads/master' && (github.event_name == 'workflow_dispatch' || vars.WORD_ART_FRONTEND_AUTO_DEPLOY == 'true') }}
+
+    steps:
+      - name: Require master for manual deployment
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master' }}
+        shell: pwsh
+        run: throw "Run deployment dispatches from the master branch."
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24.11.0"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Build and test before requesting an AWS token. The upload phase reuses
+      # this exact dist/ tree and cannot rerun npm with credentials available.
+      - name: Build and verify without OIDC permission
+        shell: pwsh
+        run: ./frontend/deploy.ps1 -BuildOnly
+
+      - name: Preserve the verified frontend build
+        if: ${{ env.DEPLOY_REQUESTED == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: word-art-frontend-${{ github.run_id }}
+          path: frontend/dist
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: verify
+    if: ${{ github.ref == 'refs/heads/master' && (github.event_name == 'workflow_dispatch' || vars.WORD_ART_FRONTEND_AUTO_DEPLOY == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: deploy-word-art-frontend
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout deployment script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Restore the verified frontend build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: word-art-frontend-${{ github.run_id }}
+          path: frontend/dist
+
+      - name: Validate deployment configuration
+        shell: pwsh
+        env:
+          DEPLOY_ROLE_ARN: ${{ vars.WORD_ART_FRONTEND_DEPLOY_ROLE_ARN }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:DEPLOY_ROLE_ARN)) {
+            throw "Repository variable WORD_ART_FRONTEND_DEPLOY_ROLE_ARN is not configured."
+          }
+
+      - name: Assume the frontend deployment role
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ vars.WORD_ART_FRONTEND_DEPLOY_ROLE_ARN }}
+          role-session-name: word-art-frontend-${{ github.run_id }}
+          aws-region: us-east-1
+          allowed-account-ids: "885954027390"
+          unset-current-credentials: true
+          role-duration-seconds: 1800
+
+      - name: Preview production sync
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+        shell: pwsh
+        run: ./frontend/deploy.ps1 -UseExistingBuild
+
+      - name: Deploy to S3 and invalidate CloudFront
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        shell: pwsh
+        run: ./frontend/deploy.ps1 -UseExistingBuild -Apply

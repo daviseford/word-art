@@ -79,6 +79,32 @@ Assert-Count @(
 ) 0 'Dry-run mode must not invalidate CloudFront.'
 
 $global:WordArtDeployTestEvents.Clear()
+& (Join-Path $RepositoryRoot 'deploy.ps1') -BuildOnly
+$BuildOnlyEvents = @($global:WordArtDeployTestEvents)
+
+Assert-Count @(
+  $BuildOnlyEvents | Where-Object { $_ -like 'npm *' }
+) 3 'Build-only mode must install, test, and build.'
+Assert-Count @(
+  $BuildOnlyEvents | Where-Object { $_ -like 'aws *' }
+) 0 'Build-only mode must not expose or use AWS credentials.'
+
+$global:WordArtDeployTestEvents.Clear()
+& (Join-Path $RepositoryRoot 'deploy.ps1') -UseExistingBuild
+$ExistingBuildDryRunEvents = @($global:WordArtDeployTestEvents)
+
+Assert-Count @(
+  $ExistingBuildDryRunEvents | Where-Object { $_ -like 'npm *' }
+) 0 'Existing-build mode must not rerun dependency or build tooling.'
+Assert-Count @(
+  $ExistingBuildDryRunEvents | Where-Object { $_ -like 'aws s3 sync *--dryrun' }
+) 1 'Existing-build dry-run mode must preview exactly once.'
+Assert-Count @(
+  $ExistingBuildDryRunEvents |
+    Where-Object { $_ -like 'aws s3 sync *' -and $_ -notlike '*--dryrun' }
+) 0 'Existing-build dry-run mode must not upload.'
+
+$global:WordArtDeployTestEvents.Clear()
 & (Join-Path $RepositoryRoot 'deploy.ps1') -Apply
 $ApplyEvents = @($global:WordArtDeployTestEvents)
 
@@ -97,6 +123,37 @@ Assert-Count @(
 Assert-Count @(
   $ApplyEvents | Where-Object { $_ -like 'web *' }
 ) 3 'Apply mode must verify all deployed artifacts.'
+
+$global:WordArtDeployTestEvents.Clear()
+& (Join-Path $RepositoryRoot 'deploy.ps1') -UseExistingBuild -Apply
+$ExistingBuildApplyEvents = @($global:WordArtDeployTestEvents)
+
+Assert-Count @(
+  $ExistingBuildApplyEvents | Where-Object { $_ -like 'npm *' }
+) 0 'Existing-build apply mode must not rerun dependency or build tooling.'
+Assert-Count @(
+  $ExistingBuildApplyEvents |
+    Where-Object { $_ -like 'aws s3 sync *' -and $_ -notlike '*--dryrun' }
+) 1 'Existing-build apply mode must upload exactly once.'
+Assert-Count @(
+  $ExistingBuildApplyEvents | Where-Object { $_ -like 'aws cloudfront create-invalidation *' }
+) 1 'Existing-build apply mode must create one invalidation.'
+
+$RejectedFlagCombination = $false
+try {
+  & (Join-Path $RepositoryRoot 'deploy.ps1') -BuildOnly -Apply
+}
+catch {
+  if ($_.Exception.Message -eq '-BuildOnly cannot be combined with -Apply or -UseExistingBuild.') {
+    $RejectedFlagCombination = $true
+  }
+  else {
+    throw
+  }
+}
+if (-not $RejectedFlagCombination) {
+  throw 'Unsafe deployment flag combinations must be rejected.'
+}
 
 $UnexpectedArtifact = Join-Path $RepositoryRoot 'dist\unexpected.txt'
 try {

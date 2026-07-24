@@ -51,6 +51,11 @@ The verified Python 3.13 artifact is about 65.3 MB compressed and 207.8 MB unpac
 
 Production was upgraded in place and currently runs Lambda version 119 on Python 3.13 at the original API Gateway endpoint. Do not run another `serverless deploy`, `serverless remove`, or live handler invocation without explicit production approval and appropriately scoped credentials.
 
+The repository's GitHub Actions deployment is OIDC-authenticated,
+manual-dry-run-first, and independently gated from the frontend workflow. See
+the [GitHub Actions deployment runbook](../docs/GITHUB_ACTIONS_DEPLOYMENT.md)
+before configuring credentials or enabling merge-triggered deployments.
+
 ## Low-quality cleanup
 
 `scripts/cleanup_low_quality.py` inventories every SVG, counts parsed path segments, and pairs same-stem PNGs. It is dry-run by default:

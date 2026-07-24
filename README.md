@@ -12,6 +12,7 @@ API, and the original command-line prototype.
 | [`api/`](api/) | Python 3.13 Lambda that validates requests, renders SVG, and stores it in S3 | Yes |
 | [`cli-reference/`](cli-reference/) | Original Python 2 algorithm and history reference | No |
 | [`docs/`](docs/) | Product architecture, revival findings, deployment guidance, and plans | Documentation |
+| [`infra/`](infra/) | Reviewed IAM bootstrap for short-lived GitHub Actions deployment roles | Deployment support |
 | [`contract/word-art-contract.json`](contract/word-art-contract.json) | Test-enforced frontend/API behavior contract | Test authority only |
 
 Start with [the system architecture](docs/SYSTEM_ARCHITECTURE.md), then read
@@ -55,9 +56,11 @@ deployed from this checkout.
 
 ## Production safety
 
-Cloning, building, testing, packaging, or merging this repository does not
-deploy production. Do not submit successful generation probes, upload frontend
-artifacts, deploy or remove the Serverless stack, clean up bucket objects, or
-change repository archive settings without explicit approval. The frontend
-deployment command is dry-run-first; see the
+Cloning, building, testing, or packaging this repository does not deploy
+production. Merges deploy only after the corresponding GitHub automatic-deploy
+gate has completed its staged rollout and been explicitly enabled. Do not
+submit successful generation probes, upload frontend artifacts, deploy or
+remove the Serverless stack, clean up bucket objects, or change repository
+archive settings without explicit approval. Start with the
+[GitHub Actions runbook](docs/GITHUB_ACTIONS_DEPLOYMENT.md) and the frontend
 [deployment runbook](docs/FRONTEND_DEPLOYMENT.md).
