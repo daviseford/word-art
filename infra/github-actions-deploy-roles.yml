@@ -54,7 +54,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: gha-deploy-word-art-frontend
-      Description: Deploys only the Word Art frontend prefix and invalidation.
+      Description: Deploys the Word Art frontend prefix, the gallery page object, and invalidation.
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -93,6 +93,14 @@ Resources:
                   - s3:DeleteObject
                   - s3:PutObject
                 Resource: !Sub "arn:${AWS::Partition}:s3:::${SiteBucketName}/word-art/*"
+              # The gallery page is the one object outside the word-art/ prefix.
+              # It is published by a scoped copy that never deletes, so this
+              # statement grants PutObject only.
+              - Sid: PublishGalleryPage
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${SiteBucketName}/pages/word-art-gallery.html"
               - Sid: InvalidateWordArtCloudFrontPath
                 Effect: Allow
                 Action:

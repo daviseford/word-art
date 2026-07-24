@@ -61,6 +61,19 @@ aws cloudformation deploy `
   --region us-east-1
 ```
 
+Re-run the validate/deploy pair above whenever the template changes. The
+`PublishGalleryPage` statement (the gallery page's `PutObject`-only grant for
+`pages/word-art-gallery.html`) must be live before the first gallery deploy —
+a publish attempt under the old policy fails with `AccessDenied`. After the
+stack update, confirm the deployed role carries it with a read-only check:
+
+```powershell
+aws iam get-role-policy `
+  --role-name gha-deploy-word-art-frontend `
+  --policy-name deploy-word-art-frontend `
+  --query "PolicyDocument.Statement[?Sid=='PublishGalleryPage']"
+```
+
 Read the role outputs without exposing credentials:
 
 ```powershell
@@ -104,9 +117,12 @@ gh workflow run deploy-frontend.yml `
 Require all of the following:
 
 - The frontend installs, tests, builds, and emits exactly `index.html`,
-  `app.bundle.js`, and `app.css`.
+  `app.bundle.js`, `app.css`, `word-art-gallery.html`, `gallery.bundle.js`,
+  and `gallery.css`.
 - OIDC reports AWS account `885954027390`.
-- The S3 preview is limited to `s3://daviseford.com/word-art/`.
+- The S3 preview shows the `s3://daviseford.com/word-art/` sync (excluding
+  `word-art-gallery.html`) plus one scoped copy preview targeting
+  `s3://daviseford.com/pages/word-art-gallery.html` — nothing else.
 - No upload or CloudFront invalidation runs.
 
 ### 2. API dry run
@@ -136,14 +152,18 @@ gh workflow run deploy-api.yml `
 ```
 
 Run them sequentially. The frontend workflow waits for CloudFront and verifies
-the three public SHA-256 hashes. The API workflow reports Serverless stack
+all six public SHA-256 hashes, including the gallery page at
+`https://daviseford.com/pages/word-art-gallery.html`. The API workflow reports Serverless stack
 information but deliberately does not invoke the public Lambda or submit a
 generation probe.
 
 For 30 minutes after each deploy:
 
 - Frontend: watch the public page and browser console; check desktop/mobile load
-  and the 19/20 sentence boundary without submitting.
+  and the 19/20 sentence boundary without submitting. Load
+  `https://daviseford.com/pages/word-art-gallery.html` in a browser and confirm
+  compositions actually render (byte verification alone does not prove the
+  page initializes).
 - API: watch Lambda errors, timeouts, duration, and API Gateway 5xx responses.
   Confirm the stack is `UPDATE_COMPLETE`.
 
