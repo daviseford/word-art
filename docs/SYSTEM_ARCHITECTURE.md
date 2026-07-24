@@ -123,3 +123,9 @@ commit `d795a4a`. On 2026-07-23, the public S3 and CloudFront copies of
 `index.html`, `app.bundle.js`, and `app.css` were verified byte-for-byte
 against that canonical build, so no redundant upload was applied. The gallery
 remains an external consumer owned by `daviseford-landing-page`.
+
+The repository defines separate, path-scoped GitHub Actions workflows for the
+frontend and API. They use branch-restricted OIDC roles and remain
+verification-only until their independent automatic-deploy repository variables
+are enabled after the manual dry-run and first-deploy sequence in
+[`GITHUB_ACTIONS_DEPLOYMENT.md`](GITHUB_ACTIONS_DEPLOYMENT.md).

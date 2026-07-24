@@ -1,10 +1,16 @@
 [CmdletBinding()]
 param(
-  [switch]$Apply
+  [switch]$Apply,
+  [switch]$BuildOnly,
+  [switch]$UseExistingBuild
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+if ($BuildOnly -and ($Apply -or $UseExistingBuild)) {
+  throw '-BuildOnly cannot be combined with -Apply or -UseExistingBuild.'
+}
 
 $SiteS3 = 's3://daviseford.com/word-art/'
 $DistributionId = 'EOV559H6J3O6V'
@@ -36,20 +42,18 @@ function Invoke-External {
 
 Push-Location $PSScriptRoot
 try {
-  Assert-Command npm
-  Assert-Command aws
+  if (-not $UseExistingBuild) {
+    Assert-Command npm
 
-  Write-Host 'Checking the active AWS identity...'
-  Invoke-External aws @('sts', 'get-caller-identity')
+    Write-Host 'Installing the locked dependency tree...'
+    Invoke-External npm @('ci')
 
-  Write-Host 'Installing the locked dependency tree...'
-  Invoke-External npm @('ci')
+    Write-Host 'Running frontend tests...'
+    Invoke-External npm @('test')
 
-  Write-Host 'Running frontend tests...'
-  Invoke-External npm @('test')
-
-  Write-Host 'Building dist/...'
-  Invoke-External npm @('run', 'build')
+    Write-Host 'Building dist/...'
+    Invoke-External npm @('run', 'build')
+  }
 
   foreach ($artifact in $ExpectedArtifacts) {
     $artifactPath = Join-Path $DistPath $artifact
@@ -72,6 +76,16 @@ try {
   if ($artifactDifference) {
     throw "Build output differs from the deployment allowlist: $($emittedArtifacts -join ', ')"
   }
+
+  if ($BuildOnly) {
+    Write-Host 'Build-only verification complete. AWS credentials were not required.'
+    return
+  }
+
+  Assert-Command aws
+
+  Write-Host 'Checking the active AWS identity...'
+  Invoke-External aws @('sts', 'get-caller-identity')
 
   $syncArguments = @('s3', 'sync', $DistPath, $SiteS3, '--delete')
 

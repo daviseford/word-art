@@ -1,0 +1,244 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Branch-restricted GitHub Actions roles for Word Art deployments.
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    Default: daviseford
+  GitHubRepository:
+    Type: String
+    Default: word-art
+  GitHubOwnerId:
+    Type: String
+    Default: "9663863"
+  GitHubRepositoryId:
+    Type: String
+    Default: "115539633"
+  DeploymentBranch:
+    Type: String
+    Default: master
+  SiteBucketName:
+    Type: String
+    Default: daviseford.com
+  CloudFrontDistributionId:
+    Type: String
+    Default: EOV559H6J3O6V
+  ApiStackName:
+    Type: String
+    Default: word-art-serverless-dev
+  ApiFunctionName:
+    Type: String
+    Default: word-art-serverless-dev-app
+  ApiExecutionRoleName:
+    Type: String
+    Default: word-art-serverless-dev-us-east-1-lambdaRole
+  ApiGatewayId:
+    Type: String
+    Default: gy2aa8c57c
+  ApiDeploymentBucketName:
+    Type: String
+    Default: word-art-serverless-dev-serverlessdeploymentbucke-og4fy6s2h7qd
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      Tags:
+        - Key: ManagedBy
+          Value: word-art
+
+  FrontendDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: gha-deploy-word-art-frontend
+      Description: Deploys only the Word Art frontend prefix and invalidation.
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub:
+                  - !Sub "repo:${GitHubOwner}/${GitHubRepository}:ref:refs/heads/${DeploymentBranch}"
+                  - !Sub "repo:${GitHubOwner}@${GitHubOwnerId}/${GitHubRepository}@${GitHubRepositoryId}:ref:refs/heads/${DeploymentBranch}"
+      Policies:
+        - PolicyName: deploy-word-art-frontend
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ListWordArtPrefix
+                Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${SiteBucketName}"
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - word-art
+                      - word-art/
+                      - word-art/*
+              - Sid: SynchronizeWordArtObjects
+                Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:DeleteObject
+                  - s3:PutObject
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${SiteBucketName}/word-art/*"
+              - Sid: InvalidateWordArtCloudFrontPath
+                Effect: Allow
+                Action:
+                  - cloudfront:CreateInvalidation
+                  - cloudfront:GetInvalidation
+                Resource: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
+
+  ApiDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: gha-deploy-word-art-api
+      Description: Updates only the existing Word Art Serverless stack resources.
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub:
+                  - !Sub "repo:${GitHubOwner}/${GitHubRepository}:ref:refs/heads/${DeploymentBranch}"
+                  - !Sub "repo:${GitHubOwner}@${GitHubOwnerId}/${GitHubRepository}@${GitHubRepositoryId}:ref:refs/heads/${DeploymentBranch}"
+      Policies:
+        - PolicyName: deploy-word-art-api
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: InspectCloudFormation
+                Effect: Allow
+                Action:
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResource
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:DescribeStacks
+                  - cloudformation:GetTemplate
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStackResources
+                Resource: !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ApiStackName}/*"
+              - Sid: UpdateCloudFormation
+                Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:UpdateStack
+                Resource: !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ApiStackName}/*"
+              - Sid: GeneralCloudFormationReads
+                Effect: Allow
+                Action:
+                  - cloudformation:ListStacks
+                  - cloudformation:ValidateTemplate
+                Resource: "*"
+              - Sid: ManageDeploymentBucket
+                Effect: Allow
+                Action:
+                  - s3:DeleteBucketPolicy
+                  - s3:GetBucketLocation
+                  - s3:GetBucketPolicy
+                  - s3:GetBucketPolicyStatus
+                  - s3:GetBucketTagging
+                  - s3:GetEncryptionConfiguration
+                  - s3:GetLifecycleConfiguration
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:PutBucketPolicy
+                  - s3:PutBucketTagging
+                  - s3:PutEncryptionConfiguration
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${ApiDeploymentBucketName}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${ApiDeploymentBucketName}/*"
+              - Sid: ManageWordArtLambda
+                Effect: Allow
+                Action:
+                  - lambda:AddPermission
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:GetFunction
+                  - lambda:GetFunctionConfiguration
+                  - lambda:GetPolicy
+                  - lambda:ListVersionsByFunction
+                  - lambda:PublishVersion
+                  - lambda:RemovePermission
+                  - lambda:TagResource
+                  - lambda:UntagResource
+                  - lambda:UpdateFunctionCode
+                  - lambda:UpdateFunctionConfiguration
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${ApiFunctionName}"
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${ApiFunctionName}:*"
+              - Sid: ManageWordArtApiGateway
+                Effect: Allow
+                Action:
+                  - apigateway:DELETE
+                  - apigateway:GET
+                  - apigateway:PATCH
+                  - apigateway:POST
+                  - apigateway:PUT
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayId}"
+                  - !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayId}/*"
+              - Sid: ManageWordArtExecutionRole
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:DeleteRolePolicy
+                  - iam:GetRole
+                  - iam:GetRolePolicy
+                  - iam:ListAttachedRolePolicies
+                  - iam:ListRolePolicies
+                  - iam:PassRole
+                  - iam:PutRolePolicy
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:UpdateAssumeRolePolicy
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${ApiExecutionRoleName}"
+              - Sid: ManageWordArtLogGroup
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:DeleteRetentionPolicy
+                  - logs:PutRetentionPolicy
+                  - logs:TagResource
+                  - logs:UntagResource
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ApiFunctionName}:*"
+              - Sid: DiscoverWordArtLogGroup
+                Effect: Allow
+                Action: logs:DescribeLogGroups
+                Resource: "*"
+              - Sid: ManageServerlessDeploymentState
+                Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/serverless-framework/deployment/*"
+
+Outputs:
+  FrontendDeployRoleArn:
+    Value: !GetAtt FrontendDeployRole.Arn
+  ApiDeployRoleArn:
+    Value: !GetAtt ApiDeployRole.Arn

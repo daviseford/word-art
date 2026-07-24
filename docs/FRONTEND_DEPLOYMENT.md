@@ -5,7 +5,11 @@ Deployment builds `dist/`, synchronizes it to the `word-art/` prefix of the
 `daviseford.com` S3 bucket, invalidates the matching CloudFront path, and
 checks the public page and assets.
 
-Merging to GitHub does not deploy the frontend automatically.
+GitHub Actions can deploy frontend runtime changes merged to `master`, but only
+after the staged rollout in
+[`GITHUB_ACTIONS_DEPLOYMENT.md`](GITHUB_ACTIONS_DEPLOYMENT.md) has passed and
+the `WORD_ART_FRONTEND_AUTO_DEPLOY` repository variable is `true`. Without that
+gate, merging only runs verification.
 
 ## Production targets
 
@@ -41,14 +45,25 @@ cd frontend
 
 The script:
 
-1. Checks that `npm` and `aws` are available.
-2. Prints the active AWS identity.
-3. Runs `npm ci`, `npm test`, and `npm run build`.
-4. Requires `dist/index.html`, `dist/app.bundle.js`, and `dist/app.css`.
+1. Checks that `npm` is available.
+2. Runs `npm ci`, `npm test`, and `npm run build`.
+3. Requires the exact `dist/index.html`, `dist/app.bundle.js`, and
+   `dist/app.css` allowlist.
+4. Checks that `aws` is available and prints the active AWS identity.
 5. Runs `aws s3 sync` with `--delete --dryrun`.
 6. Stops without uploading or invalidating CloudFront.
 
 Review the dry-run output carefully. Unexpected deletions are a stop condition.
+
+The script also exposes two CI-oriented modes:
+
+- `-BuildOnly` installs, tests, builds, and validates the exact artifact
+  allowlist without requiring AWS.
+- `-UseExistingBuild` validates the existing `dist/` tree and performs only the
+  dry-run/apply deployment phase. It never reruns npm while AWS credentials are
+  available.
+
+`-BuildOnly` cannot be combined with `-Apply` or `-UseExistingBuild`.
 
 If local execution policy blocks the script, use a process-scoped bypass rather than changing machine policy:
 

@@ -1,0 +1,166 @@
+name: Deploy Word Art API
+
+on:
+  pull_request:
+    paths:
+      - "api/**"
+      - "contract/**"
+      - ".github/workflows/deploy-api.yml"
+      - "infra/github-actions-deploy-roles.yml"
+  push:
+    branches: [master]
+    paths:
+      - "api/*.py"
+      - "api/requirements.txt"
+      - "api/serverless.yml"
+      - "api/package.json"
+      - "api/package-lock.json"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Package and validate credentials without deploying the stack."
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Require master for manual deployment
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master' }}
+        run: |
+          echo "::error::Run deployment dispatches from the master branch."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            api/requirements.txt
+            api/requirements-dev.txt
+
+      - name: Install Python dependencies
+        working-directory: api
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Test API without AWS credentials
+        working-directory: api
+        run: python -m pytest
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install Serverless tooling without AWS credentials
+        working-directory: api
+        run: npm ci
+
+  package-and-deploy:
+    needs: verify
+    if: ${{ github.ref == 'refs/heads/master' && (github.event_name == 'workflow_dispatch' || vars.WORD_ART_API_AUTO_DEPLOY == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: deploy-word-art-api
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      # The Serverless CLI must run in the deployment job, but dependency
+      # lifecycle scripts do not need deployment authority.
+      - name: Restore locked Serverless tooling without lifecycle scripts
+        working-directory: api
+        run: npm ci --ignore-scripts
+
+      - name: Validate deployment configuration
+        env:
+          DEPLOY_ROLE_ARN: ${{ vars.WORD_ART_API_DEPLOY_ROLE_ARN }}
+          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+        run: |
+          test -n "$DEPLOY_ROLE_ARN" || {
+            echo "::error::Repository variable WORD_ART_API_DEPLOY_ROLE_ARN is not configured."
+            exit 1
+          }
+          test -n "$SERVERLESS_ACCESS_KEY" || {
+            echo "::error::Repository secret SERVERLESS_ACCESS_KEY is not configured."
+            exit 1
+          }
+
+      - name: Assume the API deployment role
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ vars.WORD_ART_API_DEPLOY_ROLE_ARN }}
+          role-session-name: word-art-api-${{ github.run_id }}
+          aws-region: us-east-1
+          allowed-account-ids: "885954027390"
+          unset-current-credentials: true
+          role-duration-seconds: 3600
+
+      # Serverless Framework v4 requires AWS access even for packaging. The
+      # short-lived AWS session is configured only after the OIDC-free
+      # verification job and the script-disabled locked install finish.
+      - name: Package the API
+        working-directory: api
+        env:
+          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+          SLS_AWS_SDK: "3"
+        run: npm run package
+
+      - name: Enforce Lambda package size
+        working-directory: api
+        run: python -m scripts.verify_serverless_package
+
+      - name: Complete API dry run
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+        run: echo "Package and credential validation passed; the CloudFormation stack was not changed."
+
+      - name: Deploy the packaged API
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        working-directory: api
+        env:
+          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+          SLS_AWS_SDK: "3"
+        run: npx serverless deploy --package .serverless --stage dev --region us-east-1 --verbose
+
+      - name: Report deployed API
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        working-directory: api
+        env:
+          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+          SLS_AWS_SDK: "3"
+        run: npx serverless info --stage dev --region us-east-1
