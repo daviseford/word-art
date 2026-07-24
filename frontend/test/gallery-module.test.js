@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 const Gallery = require('../src/aws-photo-gallery');
 
 const {
@@ -12,6 +15,17 @@ const makePhotos = count =>
   Array.from({ length: count }, (_, index) => ({ Key: `${index}.png` }));
 
 describe('gallery pagination module', function () {
+  describe('source hygiene', function () {
+    it('never interpolates dynamic values into innerHTML', function () {
+      const moduleSource = fs.readFileSync(
+        path.resolve(__dirname, '../src/aws-photo-gallery.js'),
+        'utf8'
+      );
+
+      expect(moduleSource).to.not.match(/innerHTML\s*[+=].*\+/);
+    });
+  });
+
   describe('getPage', function () {
     it('renders only the requested page of photos', function () {
       const result = getPage(makePhotos(29), 2, 12);

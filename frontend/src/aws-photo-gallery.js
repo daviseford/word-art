@@ -181,7 +181,8 @@
 
       selectPage(parsePageNumber(window.location.search), false);
     }).catch(function (error) {
-      app.innerHTML = '<p class="gallery-error">' + error.message + ' Please try again shortly.</p>';
+      app.textContent = '';
+      app.appendChild(element('p', 'gallery-error', error.message + ' Please try again shortly.'));
       status.textContent = 'Gallery unavailable';
     });
   }
