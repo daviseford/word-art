@@ -16,6 +16,8 @@ function aws {
   $global:LASTEXITCODE = 0
 }
 
+$global:WordArtDeployTamperGalleryPage = $false
+
 function Invoke-WebRequest {
   param(
     [string]$Uri,
@@ -25,6 +27,10 @@ function Invoke-WebRequest {
   )
 
   [void]$global:WordArtDeployTestEvents.Add("web $Uri")
+  if ($global:WordArtDeployTamperGalleryPage -and $Uri -like '*/pages/word-art-gallery.html') {
+    Set-Content -LiteralPath $OutFile -Value 'tampered gallery page'
+    return
+  }
   $artifact = if ($Uri.EndsWith('/')) { 'index.html' } else { $Uri.Split('/')[-1] }
   Copy-Item -LiteralPath (Join-Path $RepositoryRoot "dist\$artifact") -Destination $OutFile
 }
@@ -72,8 +78,19 @@ Assert-Count @(
   $DryRunEvents | Where-Object { $_ -like 'aws s3 sync *--dryrun' }
 ) 1 'Dry-run mode must preview exactly once.'
 Assert-Count @(
+  $DryRunEvents |
+    Where-Object { $_ -like 'aws s3 sync *--exclude word-art-gallery.html*' }
+) 1 'The sync must exclude the gallery page from the /word-art/ scope.'
+Assert-Count @(
   $DryRunEvents | Where-Object { $_ -like 'aws s3 sync *' -and $_ -notlike '*--dryrun' }
 ) 0 'Dry-run mode must not upload.'
+Assert-Count @(
+  $DryRunEvents |
+    Where-Object { $_ -like 'aws s3 cp *pages/word-art-gallery.html --dryrun' }
+) 1 'Dry-run mode must preview the gallery page copy exactly once.'
+Assert-Count @(
+  $DryRunEvents | Where-Object { $_ -like 'aws s3 cp *' -and $_ -notlike '*--dryrun' }
+) 0 'Dry-run mode must not copy the gallery page.'
 Assert-Count @(
   $DryRunEvents | Where-Object { $_ -like 'aws cloudfront *' }
 ) 0 'Dry-run mode must not invalidate CloudFront.'
@@ -103,6 +120,10 @@ Assert-Count @(
   $ExistingBuildDryRunEvents |
     Where-Object { $_ -like 'aws s3 sync *' -and $_ -notlike '*--dryrun' }
 ) 0 'Existing-build dry-run mode must not upload.'
+Assert-Count @(
+  $ExistingBuildDryRunEvents |
+    Where-Object { $_ -like 'aws s3 cp *' -and $_ -notlike '*--dryrun' }
+) 0 'Existing-build dry-run mode must not copy the gallery page.'
 
 $global:WordArtDeployTestEvents.Clear()
 & (Join-Path $RepositoryRoot 'deploy.ps1') -Apply
@@ -115,14 +136,32 @@ Assert-Count @(
   $ApplyEvents | Where-Object { $_ -like 'aws s3 sync *' -and $_ -notlike '*--dryrun' }
 ) 1 'Apply mode must upload exactly once.'
 Assert-Count @(
+  $ApplyEvents | Where-Object { $_ -like 'aws s3 cp *--dryrun' }
+) 1 'Apply mode must preview the gallery page copy before copying.'
+Assert-Count @(
+  $ApplyEvents | Where-Object { $_ -like 'aws s3 cp *' -and $_ -notlike '*--dryrun' }
+) 1 'Apply mode must copy the gallery page exactly once.'
+Assert-Count @(
+  $ApplyEvents |
+    Where-Object { $_ -like 'aws s3 cp *word-art-gallery.html s3://daviseford.com/pages/word-art-gallery.html' }
+) 1 'The gallery page copy must target its scoped pages/ destination.'
+Assert-Count @(
   $ApplyEvents | Where-Object { $_ -like 'aws cloudfront create-invalidation *' }
 ) 1 'Apply mode must create one invalidation.'
+Assert-Count @(
+  $ApplyEvents |
+    Where-Object { $_ -like 'aws cloudfront create-invalidation *--paths /word-art/`* /pages/word-art-gallery.html *' }
+) 1 'Apply mode must invalidate both the word-art scope and the gallery page.'
 Assert-Count @(
   $ApplyEvents | Where-Object { $_ -like 'aws cloudfront wait invalidation-completed *' }
 ) 1 'Apply mode must wait for its invalidation.'
 Assert-Count @(
   $ApplyEvents | Where-Object { $_ -like 'web *' }
-) 3 'Apply mode must verify all deployed artifacts.'
+) 6 'Apply mode must verify all deployed artifacts.'
+Assert-Count @(
+  $ApplyEvents |
+    Where-Object { $_ -eq 'web https://daviseford.com/pages/word-art-gallery.html' }
+) 1 'Apply mode must verify the gallery page at its scoped URL.'
 
 $global:WordArtDeployTestEvents.Clear()
 & (Join-Path $RepositoryRoot 'deploy.ps1') -UseExistingBuild -Apply
@@ -183,5 +222,30 @@ finally {
     Move-Item -LiteralPath $IntermediateBundle -Destination $CanonicalBundle
   }
 }
+
+$global:WordArtDeployTestEvents.Clear()
+$RejectedGalleryTamper = $false
+try {
+  $global:WordArtDeployTamperGalleryPage = $true
+  & (Join-Path $RepositoryRoot 'deploy.ps1') -UseExistingBuild -Apply
+}
+catch {
+  if ($_.Exception.Message -eq 'Deployed content does not match dist/word-art-gallery.html after invalidation.') {
+    $RejectedGalleryTamper = $true
+  }
+  else {
+    throw
+  }
+}
+finally {
+  $global:WordArtDeployTamperGalleryPage = $false
+}
+if (-not $RejectedGalleryTamper) {
+  throw 'A gallery page hash mismatch must fail the deployment.'
+}
+Assert-Count @(
+  $global:WordArtDeployTestEvents |
+    Where-Object { $_ -eq 'web https://daviseford.com/pages/word-art-gallery.html' }
+) 1 'The hash mismatch must be detected at the gallery page URL.'
 
 Write-Output 'deploy.ps1 behavior OK'

@@ -11,7 +11,7 @@ describe('frontend deployment scripts', function () {
   const deploymentWorkflow = fs.readFileSync(
     path.join(workspaceRoot, '.github', 'workflows', 'deploy-frontend.yml'),
     'utf8'
-  );
+  ).replace(/\r\n/g, '\n');
   const deploymentRoles = fs.readFileSync(
     path.join(workspaceRoot, 'infra', 'github-actions-deploy-roles.yml'),
     'utf8'
@@ -26,6 +26,34 @@ describe('frontend deployment scripts', function () {
     expect(deployScript).to.contain('$ExpectedArtifacts');
     expect(deployScript).to.contain('Compare-Object');
     expect(deployScript).to.contain('-CaseSensitive');
+  });
+
+  it('ships all six dist artifacts and scopes the gallery page outside the word-art sync', function () {
+    expect(deployScript).to.contain(
+      "@('app.bundle.js', 'app.css', 'index.html', 'gallery.bundle.js', 'gallery.css', 'word-art-gallery.html')"
+    );
+    expect(deployScript).to.contain("'s3://daviseford.com/word-art/'");
+    expect(deployScript).to.contain("'--delete'");
+    expect(deployScript).to.contain("'--exclude', 'word-art-gallery.html'");
+    expect(deployScript).to.contain("'s3://daviseford.com/pages/word-art-gallery.html'");
+    expect(deployScript).to.contain("'https://daviseford.com/pages/word-art-gallery.html'");
+  });
+
+  it('gates the gallery page copy behind the same dry-run and apply mechanism as the sync', function () {
+    const copyPreview = deployScript.indexOf("$galleryCopyArguments + @('--dryrun')");
+    const applyGate = deployScript.indexOf('if (-not $Apply)');
+    const realCopy = deployScript.indexOf('Invoke-External aws $galleryCopyArguments');
+
+    expect(copyPreview).to.be.greaterThan(-1);
+    expect(applyGate).to.be.greaterThan(-1);
+    expect(realCopy).to.be.greaterThan(-1);
+    expect(copyPreview).to.be.lessThan(applyGate);
+    expect(realCopy).to.be.greaterThan(applyGate);
+  });
+
+  it('invalidates both the word-art scope and the gallery page', function () {
+    expect(deployScript).to.contain("'/word-art/*'");
+    expect(deployScript).to.contain("'/pages/word-art-gallery.html'");
   });
 
   it('verifies the app before uploading and waits for CloudFront', function () {
