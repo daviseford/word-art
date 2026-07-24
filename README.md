@@ -50,9 +50,11 @@ The PNG-conversion endpoint is a deployed black box whose source is not present
 in this repository. Preserve its observed `{ url, bg_color }` request and
 `svg_url` response until the service is recovered or replaced.
 
-The public gallery is owned by the separate `daviseford-landing-page`
-repository. It consumes the generated public objects but is not built or
-deployed from this checkout.
+The public gallery page at
+`https://daviseford.com/pages/word-art-gallery.html` is not external: it is
+built and deployed from `frontend/` in this repository. It renders the
+generated public objects by listing the public `word-art-pngs` bucket
+anonymously, so that bucket's public-listing ACL is a load-bearing dependency.
 
 ## Production safety
 

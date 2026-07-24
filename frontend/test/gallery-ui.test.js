@@ -22,7 +22,7 @@ describe('gallery interface', function () {
     expect(template).to.contain('id="gallery"');
   });
 
-  it('declares the landing-page canonical URL', function () {
+  it('declares the live page canonical URL', function () {
     expect(template).to.contain(
       '<link rel="canonical" href="https://daviseford.com/pages/word-art-gallery.html">',
     );

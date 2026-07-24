@@ -5,8 +5,11 @@ The static browser client for the Word Art generator. It preprocesses text, subm
 This path-local project is the browser component of the canonical
 [`word-art`](https://github.com/daviseford/word-art) repository. The SVG API is
 in [`../api/`](../api/), and the original algorithm reference is in
-[`../cli-reference/`](../cli-reference/). The public gallery remains in the
-separate `daviseford-landing-page` repository.
+[`../cli-reference/`](../cli-reference/). The public gallery page at
+`https://daviseford.com/pages/word-art-gallery.html` is part of this component:
+its source lives in `src/` (`word-art-gallery.html`, `gallery.css`,
+`aws-photo-gallery.js`, `gallery-entry.js`), Webpack builds it into `dist/`,
+and `deploy.ps1` publishes it alongside the generator.
 
 Start with [the system architecture](../docs/SYSTEM_ARCHITECTURE.md), then read
 [the revival audit](../docs/REVIVAL_AUDIT.md) before modernization or admin
@@ -52,5 +55,7 @@ rollback.
 ## Known boundary
 
 The SVG API source is in `../api/`. The configured PNG endpoint is a separate
-deployed service whose source is not present in this repository. The gallery is
-owned by `daviseford-landing-page`, not this checkout.
+deployed service whose source is not present in this repository. The gallery
+page itself is built and deployed from this checkout, but it depends on the
+public bucket-listing ACL of `word-art-pngs`: it lists that bucket anonymously,
+so removing public listing breaks the page.

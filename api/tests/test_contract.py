@@ -173,7 +173,7 @@ def test_color_split_path_groups_preserve_exact_geometry():
     ]
 
 
-def test_external_boundaries_are_documentation_only():
+def test_external_boundaries_record_ownership_and_dependencies():
     png = CONTRACT["external_boundaries"]["png_conversion"]
     gallery = CONTRACT["external_boundaries"]["gallery"]
 
@@ -183,6 +183,13 @@ def test_external_boundaries_are_documentation_only():
         "response_field": "svg_url",
         "executable_schema": False,
     }
-    assert gallery["ownership_repository"] == "daviseford-landing-page"
-    assert gallery["role"] == "external_consumer"
+    assert gallery["ownership"] == "word-art"
+    assert gallery["role"] == "first_party_gallery_page"
+    assert (
+        gallery["page_url"]
+        == "https://daviseford.com/pages/word-art-gallery.html"
+    )
+    assert gallery["data_source"]["bucket"] == "word-art-pngs"
+    assert gallery["data_source"]["access"] == "anonymous_public_bucket_listing"
+    assert gallery["data_source"]["load_bearing_acl"] is True
     assert gallery["executable_schema"] is False

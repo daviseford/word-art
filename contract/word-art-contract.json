@@ -231,8 +231,15 @@
       "executable_schema": false
     },
     "gallery": {
-      "ownership_repository": "daviseford-landing-page",
-      "role": "external_consumer",
+      "ownership": "word-art",
+      "role": "first_party_gallery_page",
+      "page_url": "https://daviseford.com/pages/word-art-gallery.html",
+      "data_source": {
+        "bucket": "word-art-pngs",
+        "access": "anonymous_public_bucket_listing",
+        "load_bearing_acl": true,
+        "purpose": "the gallery browser lists the public word-art-pngs bucket anonymously; removing the public-listing ACL breaks the page"
+      },
       "executable_schema": false
     }
   }

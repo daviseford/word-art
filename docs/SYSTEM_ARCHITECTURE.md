@@ -9,7 +9,7 @@ Last verified locally: 2026-07-23
 | [`frontend/`](../frontend/) | Static browser UI, text normalization, request construction, and result display | Yes |
 | [`api/`](../api/) | Python 3.13 Lambda source that validates requests, renders SVG, and stores it in S3 | Yes |
 | [`cli-reference/`](../cli-reference/) | Original Python 2 CLI and source of the sentence-to-path idea | No |
-| `daviseford-landing-page` | External public Word Art gallery and paginated S3 browser | Yes |
+| [`frontend/`](../frontend/) gallery page | Public Word Art gallery and paginated S3 browser, built and deployed with the frontend | Yes |
 | Unknown PNG service | Fetches an SVG and creates the paired PNG | Yes, but its source is not in this repository |
 
 The original CLI is an ancestor, not a runtime dependency. The frontend and
@@ -98,7 +98,7 @@ pair while preserving the other six. A post-delete scan found zero remaining
 SVGs below 20 segments. Recovery bundles remain outside the repository in the
 maintainer's dated backup directories.
 
-The gallery page lives in `daviseford-landing-page`, fetches the public S3 XML inventory without the legacy AWS SDK/Cognito dependency, sorts it newest-first, and renders only 12 images per page. Gallery images are constrained to their media viewport with `object-fit: contain`.
+The gallery page is built in `frontend/` (source `src/word-art-gallery.html`, `src/gallery.css`, `src/aws-photo-gallery.js`, and `src/gallery-entry.js`) and published by the frontend deploy to `pages/word-art-gallery.html`, with its assets served under `/word-art/`. It fetches the public S3 XML inventory without the legacy AWS SDK/Cognito dependency, sorts it newest-first, and renders only 12 images per page. Gallery images are constrained to their media viewport with `object-fit: contain`. The data source is unchanged: the browser lists the public `word-art-pngs` bucket anonymously, so that bucket's public-listing ACL is load-bearing for the page.
 
 ## Local admin boundary
 
@@ -122,7 +122,10 @@ The current generator redesign is preserved in `frontend/` through source
 commit `d795a4a`. On 2026-07-23, the public S3 and CloudFront copies of
 `index.html`, `app.bundle.js`, and `app.css` were verified byte-for-byte
 against that canonical build, so no redundant upload was applied. The gallery
-remains an external consumer owned by `daviseford-landing-page`.
+page is now first-party: `frontend/deploy.ps1` builds it with the generator and
+publishes it to `pages/word-art-gallery.html` (its existing URL
+`https://daviseford.com/pages/word-art-gallery.html`), with its bundle and
+stylesheet served under `/word-art/`.
 
 The repository defines separate, path-scoped GitHub Actions workflows for the
 frontend and API. They use branch-restricted OIDC roles and remain

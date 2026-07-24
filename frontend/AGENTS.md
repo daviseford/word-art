@@ -31,10 +31,16 @@ dependency changes isolated from product behavior changes.
 - `src/config.js`: deployed endpoints and public bucket URLs
 - `src/colors.js`: presets
 - `src/index.html`: page template
+- `src/word-art-gallery.html`: public gallery page template
+- `src/gallery.css`: gallery page styling
+- `src/aws-photo-gallery.js`: gallery bucket listing, sorting, and pagination logic
+- `src/gallery-entry.js`: gallery Webpack entry point and page bootstrapping
 - `deploy.ps1`: canonical dry-run-first production deployment
 - `upload.sh`: compatibility wrapper around `deploy.ps1`
 - `serve.js`: dependency-free local static server; never proxy production APIs through it
 - `test/test.js`: Mocha coverage for utilities
+- `test/gallery-module.test.js`: gallery listing, sorting, and pagination coverage
+- `test/gallery-ui.test.js`: gallery page markup and accessibility coverage
 - `test/deploy.test.js` and `test/deploy-script.test.ps1`: deployment safety and control-flow coverage
 - `test/server.test.js`: local-server path safety and smoke coverage
 - `dist/`: tracked generated deployment output; never hand-edit it
@@ -61,6 +67,6 @@ Edit `src/`, test, then rebuild `dist/` when a source change is intended for dep
 
 ## Verification
 
-Run `npm test` for utility, request-shaping, or local-server changes and `npm run build` for any frontend source change. Smoke-test `npm start` after build-tool changes. For UI changes, also exercise the form locally at desktop and mobile widths without submitting to production unless the user authorizes it.
+Run `npm test` for utility, request-shaping, gallery, or local-server changes and `npm run build` for any frontend source change. Smoke-test `npm start` after build-tool changes. For UI changes, also exercise the form locally at desktop and mobile widths without submitting to production unless the user authorizes it. Gallery changes must keep `test/gallery-module.test.js` and `test/gallery-ui.test.js` passing; the gallery page depends on the public bucket-listing ACL of `word-art-pngs`, and tests must not list the real bucket.
 
 For deployment-script changes, run `npm test`, parse `deploy.ps1` with the PowerShell parser, and exercise only the default dry-run path unless production deployment is explicitly approved.
