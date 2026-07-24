@@ -17,6 +17,18 @@ describe('local static server', function () {
     expect(resolveRequestPath('/%not-valid', distDir)).to.equal(null);
   });
 
+  it('maps the gallery page and its /word-art/ asset URLs inside dist', function () {
+    expect(resolveRequestPath('/word-art-gallery.html', distDir)).to.equal(path.join(distDir, 'word-art-gallery.html'));
+    expect(resolveRequestPath('/word-art/gallery.css?v=abc123', distDir)).to.equal(path.join(distDir, 'gallery.css'));
+    expect(resolveRequestPath('/word-art/gallery.bundle.js?v=abc123', distDir)).to.equal(path.join(distDir, 'gallery.bundle.js'));
+    expect(resolveRequestPath('/word-art/', distDir)).to.equal(path.join(distDir, 'index.html'));
+  });
+
+  it('keeps traversal safety behind the /word-art/ prefix', function () {
+    expect(resolveRequestPath('/word-art/../package.json', distDir)).to.equal(null);
+    expect(resolveRequestPath('/word-art/%2e%2e/package.json', distDir)).to.equal(null);
+  });
+
   it('serves the built application', function (done) {
     const server = createServer({ distDir });
 
