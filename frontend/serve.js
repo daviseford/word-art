@@ -23,9 +23,12 @@ const resolveRequestPath = (requestUrl, distDir = DEFAULT_DIST_DIR) => {
     return null;
   }
 
-  const relativePath = pathname === '/'
+  // In production the gallery references its assets absolutely under
+  // /word-art/; locally dist/ is served from the root, so drop the prefix.
+  const normalizedPathname = pathname.replace(/^[/\\]+word-art[/\\]+/, '/');
+  const relativePath = normalizedPathname === '/'
     ? 'index.html'
-    : pathname.replace(/^[/\\]+/, '');
+    : normalizedPathname.replace(/^[/\\]+/, '');
   const root = path.resolve(distDir);
   const filePath = path.resolve(root, relativePath);
 

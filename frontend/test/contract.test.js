@@ -106,7 +106,7 @@ describe('canonical Word Art contract', function () {
       .to.equal(split.path);
   });
 
-  it('records external systems as documentation-only boundaries', function () {
+  it('records boundary ownership and load-bearing external dependencies', function () {
     const png = contract.external_boundaries.png_conversion;
     const gallery = contract.external_boundaries.gallery;
 
@@ -114,8 +114,13 @@ describe('canonical Word Art contract', function () {
     expect(png.request_fields).to.have.ordered.members(['url', 'bg_color']);
     expect(png.response_field).to.equal('svg_url');
     expect(png.executable_schema).to.equal(false);
-    expect(gallery.ownership_repository).to.equal('daviseford-landing-page');
-    expect(gallery.role).to.equal('external_consumer');
+    expect(gallery.ownership).to.equal('word-art');
+    expect(gallery.role).to.equal('first_party_gallery_page');
+    expect(gallery.page_url)
+      .to.equal('https://daviseford.com/pages/word-art-gallery.html');
+    expect(gallery.data_source.bucket).to.equal('word-art-pngs');
+    expect(gallery.data_source.access).to.equal('anonymous_public_bucket_listing');
+    expect(gallery.data_source.load_bearing_acl).to.equal(true);
     expect(gallery.executable_schema).to.equal(false);
   });
 });

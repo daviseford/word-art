@@ -26,10 +26,13 @@ const getAssetVersion = () => {
   return hash.digest('hex').slice(0, 12);
 };
 
+const assetVersion = getAssetVersion();
+
 module.exports = {
   mode: 'production',
   entry: {
-    app: './src/word-art.js'
+    app: './src/word-art.js',
+    gallery: './src/gallery-entry.js'
   },
   output: {
     filename: '[name].bundle.js',
@@ -61,13 +64,26 @@ module.exports = {
           from: path.resolve(__dirname, 'src/app.css'),
           to: 'app.css',
         },
+        {
+          from: path.resolve(__dirname, 'src/gallery.css'),
+          to: 'gallery.css',
+        },
       ],
     }),
     new HtmlWebpackPlugin({
       title: 'Word Art Generator',
       template: './src/index.html',
       inject: false,
-      assetVersion: getAssetVersion(),
+      chunks: ['app'],
+      assetVersion,
+    }),
+    new HtmlWebpackPlugin({
+      title: 'Word Art Gallery',
+      filename: 'word-art-gallery.html',
+      template: './src/word-art-gallery.html',
+      inject: false,
+      chunks: ['gallery'],
+      assetVersion,
     })
   ],
   module: {

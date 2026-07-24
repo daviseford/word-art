@@ -140,7 +140,7 @@ The revived handler logs operation names/checksums and exception traces without 
 1. Replace client-authoritative checksums with a backend-derived content hash and coordinate the migration across frontend, SVG objects, and PNG pairing.
 2. Recover or replace the PNG service, then make PNG creation idempotent for existing SVG-only objects.
 3. Add API abuse controls and decide whether public bucket listing/public-read ACLs remain intentional.
-4. Deploy and observe the reviewed generator/gallery frontends when explicitly approved.
+4. Deploy and observe the reviewed frontend — the generator and the gallery page, both now deployed from this repository — when explicitly approved.
 5. Modernize the static build toolchain separately from UI changes.
 6. Build the local, dry-run-first admin described in `SYSTEM_ARCHITECTURE.md`.
 

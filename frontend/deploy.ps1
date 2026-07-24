@@ -13,11 +13,13 @@ if ($BuildOnly -and ($Apply -or $UseExistingBuild)) {
 }
 
 $SiteS3 = 's3://daviseford.com/word-art/'
+$GalleryPageS3 = 's3://daviseford.com/pages/word-art-gallery.html'
 $DistributionId = 'EOV559H6J3O6V'
-$InvalidationPath = '/word-art/*'
+$InvalidationPaths = @('/word-art/*', '/pages/word-art-gallery.html')
 $SiteUrl = 'https://daviseford.com/word-art/'
+$GalleryPageUrl = 'https://daviseford.com/pages/word-art-gallery.html'
 $DistPath = Join-Path $PSScriptRoot 'dist'
-$ExpectedArtifacts = @('app.bundle.js', 'app.css', 'index.html')
+$ExpectedArtifacts = @('app.bundle.js', 'app.css', 'index.html', 'gallery.bundle.js', 'gallery.css', 'word-art-gallery.html')
 $verificationFiles = @()
 
 function Assert-Command {
@@ -87,10 +89,14 @@ try {
   Write-Host 'Checking the active AWS identity...'
   Invoke-External aws @('sts', 'get-caller-identity')
 
-  $syncArguments = @('s3', 'sync', $DistPath, $SiteS3, '--delete')
+  $syncArguments = @('s3', 'sync', $DistPath, $SiteS3, '--delete', '--exclude', 'word-art-gallery.html')
+  $galleryCopyArguments = @('s3', 'cp', (Join-Path $DistPath 'word-art-gallery.html'), $GalleryPageS3)
 
   Write-Host 'Previewing the production S3 synchronization...'
   Invoke-External aws ($syncArguments + @('--dryrun'))
+
+  Write-Host 'Previewing the gallery page copy...'
+  Invoke-External aws ($galleryCopyArguments + @('--dryrun'))
 
   if (-not $Apply) {
     Write-Host ''
@@ -102,10 +108,13 @@ try {
   Write-Host 'Uploading dist/ to production S3...'
   Invoke-External aws $syncArguments
 
+  Write-Host 'Uploading the gallery page to its scoped location...'
+  Invoke-External aws $galleryCopyArguments
+
   Write-Host 'Creating the CloudFront invalidation...'
   $invalidationOutput = & aws cloudfront create-invalidation `
     --distribution-id $DistributionId `
-    --paths $InvalidationPath `
+    --paths @InvalidationPaths `
     --query 'Invalidation.Id' `
     --output text
   if ($LASTEXITCODE -ne 0) {
@@ -130,7 +139,11 @@ try {
 
   Write-Host 'Checking deployed asset hashes...'
   foreach ($artifact in $ExpectedArtifacts) {
-    $url = if ($artifact -eq 'index.html') { $SiteUrl } else { "${SiteUrl}${artifact}" }
+    $url = switch ($artifact) {
+      'index.html' { $SiteUrl }
+      'word-art-gallery.html' { $GalleryPageUrl }
+      default { "${SiteUrl}${artifact}" }
+    }
     $download = New-TemporaryFile
     $verificationFiles += $download.FullName
     Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30 -OutFile $download.FullName

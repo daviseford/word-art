@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Art Gallery — Davis E. Ford</title>
+  <meta name="description" content="Browse generative Word Art compositions made from books, articles, and other long-form text.">
+  <link rel="canonical" href="https://daviseford.com/pages/word-art-gallery.html">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=eE5za3Wkak">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=eE5za3Wkak">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=eE5za3Wkak">
+  <link rel="manifest" href="/site.webmanifest?v=eE5za3Wkak">
+  <link rel="stylesheet" href="/word-art/gallery.css?v=<%= htmlWebpackPlugin.options.assetVersion %>">
+</head>
+<body class="gallery-page">
+  <a class="skip-link" href="#gallery">Skip to the gallery</a>
+
+  <header class="gallery-header">
+    <nav class="gallery-nav section-shell" aria-label="Primary navigation">
+      <a class="gallery-nav__brand" href="/">Davis E. Ford</a>
+      <div class="gallery-nav__links">
+        <a href="/word-art/">Create your own</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://github.com/daviseford" rel="noopener">GitHub</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="gallery-collection" id="gallery" aria-labelledby="collection-title">
+      <div class="section-shell">
+        <div class="gallery-collection__heading">
+          <div>
+            <p class="eyebrow">The collection</p>
+            <h2 id="collection-title">Recent compositions</h2>
+          </div>
+          <p id="gallery-status" class="gallery-status" aria-live="polite">Loading compositions…</p>
+        </div>
+        <div id="app" aria-live="polite"></div>
+        <nav id="gallery-pagination" class="pagination" aria-label="Gallery pages"></nav>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner section-shell">
+      <p>Word Art is a small generative-art experiment by Davis E. Ford.</p>
+      <a href="/word-art/">Create a composition →</a>
+    </div>
+  </footer>
+
+  <script src="/word-art/gallery.bundle.js?v=<%= htmlWebpackPlugin.options.assetVersion %>"></script>
+</body>
+</html>

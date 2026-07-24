@@ -2,8 +2,9 @@
 
 The Word Art frontend is a path-local static project under `frontend/`.
 Deployment builds `dist/`, synchronizes it to the `word-art/` prefix of the
-`daviseford.com` S3 bucket, invalidates the matching CloudFront path, and
-checks the public page and assets.
+`daviseford.com` S3 bucket (excluding the gallery page, which is copied to
+`pages/word-art-gallery.html`), invalidates the matching CloudFront paths, and
+checks the public pages and assets.
 
 GitHub Actions can deploy frontend runtime changes merged to `master`, but only
 after the staged rollout in
@@ -16,9 +17,11 @@ gate, merging only runs verification.
 | Resource | Value |
 | --- | --- |
 | S3 destination | `s3://daviseford.com/word-art/` |
+| Gallery page destination | `s3://daviseford.com/pages/word-art-gallery.html` |
 | CloudFront distribution | `EOV559H6J3O6V` |
-| Invalidation path | `/word-art/*` |
+| Invalidation paths | `/word-art/*` and `/pages/word-art-gallery.html` |
 | Public URL | `https://daviseford.com/word-art/` |
+| Gallery page URL | `https://daviseford.com/pages/word-art-gallery.html` |
 
 ## Prerequisites
 
@@ -47,8 +50,9 @@ The script:
 
 1. Checks that `npm` is available.
 2. Runs `npm ci`, `npm test`, and `npm run build`.
-3. Requires the exact `dist/index.html`, `dist/app.bundle.js`, and
-   `dist/app.css` allowlist.
+3. Requires the exact six-artifact allowlist: `dist/index.html`,
+   `dist/app.bundle.js`, `dist/app.css`, `dist/word-art-gallery.html`,
+   `dist/gallery.bundle.js`, and `dist/gallery.css`.
 4. Checks that `aws` is available and prints the active AWS identity.
 5. Runs `aws s3 sync` with `--delete --dryrun`.
 6. Stops without uploading or invalidating CloudFront.
@@ -81,10 +85,13 @@ Production mutation is available only with the explicit `-Apply` flag:
 
 Apply mode repeats the full install, test, build, and dry-run sequence before it:
 
-1. Synchronizes `dist/` to the production S3 prefix with `--delete`.
-2. Creates a CloudFront invalidation for `/word-art/*`.
+1. Synchronizes `dist/` to the production S3 prefix with `--delete`, excluding
+   `word-art-gallery.html`, then copies the gallery page to
+   `s3://daviseford.com/pages/word-art-gallery.html`.
+2. Creates a CloudFront invalidation for `/word-art/*` and
+   `/pages/word-art-gallery.html`.
 3. Waits for the invalidation to complete.
-4. Downloads the page, JavaScript bundle, and stylesheet and requires their SHA-256 hashes to match the local build.
+4. Downloads all six published artifacts and requires their SHA-256 hashes to match the local build.
 
 The older shell entry point remains available for Git Bash or WSL and delegates to the same script:
 
@@ -101,9 +108,10 @@ Use these only when diagnosing or recovering the script:
 npm ci
 npm test
 npm run build
-aws s3 sync .\dist\ s3://daviseford.com/word-art/ --delete --dryrun
-aws s3 sync .\dist\ s3://daviseford.com/word-art/ --delete
-aws cloudfront create-invalidation --distribution-id EOV559H6J3O6V --paths "/word-art/*"
+aws s3 sync .\dist\ s3://daviseford.com/word-art/ --delete --exclude word-art-gallery.html --dryrun
+aws s3 sync .\dist\ s3://daviseford.com/word-art/ --delete --exclude word-art-gallery.html
+aws s3 cp .\dist\word-art-gallery.html s3://daviseford.com/pages/word-art-gallery.html
+aws cloudfront create-invalidation --distribution-id EOV559H6J3O6V --paths "/word-art/*" "/pages/word-art-gallery.html"
 ```
 
 Do not add `--size-only`; a changed asset can keep the same byte length.
@@ -116,6 +124,9 @@ After the script succeeds:
 Invoke-WebRequest https://daviseford.com/word-art/ -UseBasicParsing
 Invoke-WebRequest https://daviseford.com/word-art/app.bundle.js -UseBasicParsing
 Invoke-WebRequest https://daviseford.com/word-art/app.css -UseBasicParsing
+Invoke-WebRequest https://daviseford.com/pages/word-art-gallery.html -UseBasicParsing
+Invoke-WebRequest https://daviseford.com/word-art/gallery.bundle.js -UseBasicParsing
+Invoke-WebRequest https://daviseford.com/word-art/gallery.css -UseBasicParsing
 ```
 
 Then open the public page in a private browser window and verify:

@@ -7,9 +7,11 @@ and SVG API remain independent projects under `frontend/` and `api/`. The
 Python 2 prototype under `cli-reference/` is an algorithm and history reference
 only.
 
-The PNG-conversion service is an external black box, and the public gallery is
-owned by the separate `daviseford-landing-page` repository. Do not infer that
-either service is implemented here.
+The PNG-conversion service is an external black box; do not infer that it is
+implemented here. The public gallery page is first-party: it is built and
+deployed from `frontend/`. The gallery depends on the public bucket-listing
+ACL of `word-art-pngs` — the page lists that bucket anonymously, so removing
+public listing breaks it.
 
 Read `docs/SYSTEM_ARCHITECTURE.md` before changing request fields, checksums,
 result URLs, persistence behavior, or external boundaries. Read
